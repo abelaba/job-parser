@@ -1,4 +1,9 @@
 document.getElementById("saveJobButon")?.addEventListener("click", async () => {
+  const button = document.getElementById("saveJobButon");
+
+  button.disabled = true;
+  button.textContent = "Loading...";
+
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
   if (tab && tab.id) {
@@ -16,11 +21,33 @@ document.getElementById("saveJobButon")?.addEventListener("click", async () => {
       (results) => {
         if (results && results.length > 0) {
           const { url, jobText } = results[0].result;
+          saveJob(url, jobText);
         } else {
           alert("Problem parsing content");
           console.error("Problem parsing content");
+          button.disabled = false;
+          button.textContent = "Save Job Posting";
         }
       },
     );
   }
 });
+
+function saveJob(url, text) {
+  chrome.runtime.sendMessage(
+    {
+      action: "makeAPICall",
+      data: {
+        jobDescription: text,
+        url: url,
+      },
+    },
+    (response) => {
+      const content = document.getElementById("content");
+      content.innerText = response.content;
+      const button = document.getElementById("saveJobButon");
+      button.disabled = false;
+      button.textContent = "Save Job Posting";
+    },
+  );
+}
