@@ -45,6 +45,41 @@ Respond only with the JSON object, without any additional text or explanation.
     throw error;
   }
 };
+
+const checkIfJobPostingExists = async (url) => {
+  try {
+    const response = await fetch(
+      `https://api.notion.com/v1/databases/${NOTIONDATABASEID}/query`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${NOTIONAPIKEY}`,
+          "Notion-Version": "2022-06-28",
+        },
+        body: JSON.stringify({
+          filter: {
+            property: "URL",
+            url: {
+              equals: url,
+            },
+          },
+        }),
+      },
+    );
+
+    const responseData = await response.json();
+    const exists = responseData.results && responseData.results.length > 0;
+    if (exists) {
+      throw new Error("URL already exists in the Notion database.");
+    }
+  } catch (error) {
+    console.error("checkIfURLExistsInNotion: ", error);
+
+    throw error;
+  }
+};
+
 const saveJobPosting = async (data) => {
   try {
     const response = await fetch("https://api.notion.com/v1/pages", {
