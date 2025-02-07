@@ -1,3 +1,31 @@
+const GROQAPIKEY = "";
+const NOTIONAPIKEY = "";
+const NOTIONDATABASEID = "";
+
+chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
+  if (request.action === "makeAPICall") {
+    call(request.data)
+      .then(() => {
+        sendResponse({ message: "SUCCESS", content: "✅" });
+      })
+      .catch((error) => {
+        console.error("Error:", error),
+          sendResponse({ message: "FAILURE", content: error.message });
+      });
+    return true;
+  }
+});
+
+const call = async (data) => {
+  try {
+    await checkIfJobPostingExists(data.url);
+    const parsedJSON = await formatDataToJSON(data.jobDescription);
+    await saveJobPosting(parsedJSON);
+  } catch (e) {
+    throw e;
+  }
+};
+
 const formatDataToJSON = async (jobDescription) => {
   try {
     const response = await fetch(
