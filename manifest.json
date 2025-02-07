@@ -4,7 +4,22 @@
   "version": "1.0",
   "manifest_version": 3,
   "action": {
-    "default_popup": "hello.html",
-    "default_icon": "hello_extensions.png"
-  }
+    "default_popup": "index.html",
+    "default_icon": "images/icon.png"
+  },
+  "permissions": ["activeTab","scripting"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    },
+        {
+      "matches": ["<all_urls>"],
+      "css": ["styles.css"]
+    }
+  ]
 }
