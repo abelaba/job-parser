@@ -45,3 +45,58 @@ Respond only with the JSON object, without any additional text or explanation.
     throw error;
   }
 };
+const saveJobPosting = async (data) => {
+  try {
+    const response = await fetch("https://api.notion.com/v1/pages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${NOTIONAPIKEY}`,
+        "Notion-Version": "2022-06-28",
+      },
+      body: JSON.stringify({
+        parent: {
+          database_id: NOTIONDATABASEID,
+        },
+        properties: {
+          Link: {
+            title: [
+              {
+                text: {
+                  content: data.jobTitle,
+                  link: {
+                    url: data.url,
+                  },
+                },
+              },
+            ],
+          },
+          Status: {
+            status: {
+              name: "Not Applied",
+            },
+          },
+          Country: {
+            select: {
+              name: data.country,
+            },
+          },
+          Company: {
+            select: {
+              name: data.company,
+            },
+          },
+          URL: {
+            url: data.url,
+          },
+        },
+      }),
+    });
+
+    const responseData = await response.json();
+    console.log(responseData);
+  } catch (error) {
+    console.error("notionAPIRequest: ", error);
+    throw error;
+  }
+};
