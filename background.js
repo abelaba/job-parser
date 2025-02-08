@@ -42,7 +42,7 @@ const formatDataToJSON = async (jobDescription) => {
               role: "system",
               content: `
 	      Provide the job title and the country from the job description as a JSON object in the following format:
-{ "jobTitle": "<job-title>", "country": "<country>", "url": "<url>", "company": "<company>" }
+{ "jobTitle": "<job-title>", "country": "<country>", "url": "<url>", "company": "<company>", "description": <a short description of minimum qualifications and required qualifications as text with bullet points> }
 
 Respond only with the JSON object, without any additional text or explanation.
 	      `,
@@ -151,6 +151,16 @@ const saveJobPosting = async (data) => {
           },
           URL: {
             url: data.url,
+          },
+          Description: {
+            rich_text: [
+              {
+                type: "text",
+                text: {
+                  content: data.description,
+                },
+              },
+            ],
           },
         },
       }),
