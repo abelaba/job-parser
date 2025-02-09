@@ -6,7 +6,7 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
   if (request.action === "makeAPICall") {
     call(request.data)
       .then(() => {
-        sendResponse({ message: "SUCCESS", content: "✅" });
+        sendResponse({ message: "SUCCESS", content: "Job saved successfully" });
       })
       .catch((error) => {
         console.error("Error:", error),
