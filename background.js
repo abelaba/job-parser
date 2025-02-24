@@ -5,8 +5,14 @@ const NOTIONDATABASEID = "";
 chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
   if (request.action === "makeAPICall") {
     call(request.data)
-      .then(() => {
-        sendResponse({ message: "SUCCESS", content: "Job saved successfully" });
+      .then((data) => {
+        const title = data.properties.Link.title[0].plain_text;
+        const company = data.properties.Company.select.name;
+
+        sendResponse({
+          message: "SUCCESS",
+          content: `The job "${title}" from ${company} has been successfully saved.`,
+        });
       })
       .catch((error) => {
         console.error("Error:", error),
@@ -19,8 +25,10 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
 const call = async (data) => {
   try {
     await checkIfJobPostingExists(data.url);
+
     const parsedJSON = await formatDataToJSON(data.jobDescription);
-    await saveJobPosting(parsedJSON);
+    parsedJSON["url"] = data.url;
+    return await saveJobPosting(parsedJSON);
   } catch (e) {
     throw e;
   }
@@ -42,7 +50,7 @@ const formatDataToJSON = async (jobDescription) => {
               role: "system",
               content: `
 	      Provide the job title and the country from the job description as a JSON object in the following format:
-{ "jobTitle": "<job-title>", "country": "<country>", "url": "<url>", "company": "<company>", "description": <a short description of minimum qualifications and required qualifications as text with bullet points> }
+{ "jobTitle": "<job-title>", "country": "<country>",  "company": "<company>", "description": <a short description of minimum qualifications and required qualifications as text with bullet points> }
 
 Respond only with the JSON object, without any additional text or explanation.
 	      `,
@@ -168,6 +176,7 @@ const saveJobPosting = async (data) => {
 
     const responseData = await response.json();
     console.log(responseData);
+    return responseData;
   } catch (error) {
     console.error("notionAPIRequest: ", error);
     throw error;

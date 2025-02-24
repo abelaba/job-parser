@@ -49,6 +49,13 @@ function saveJob(url, text) {
     },
     (response) => {
       const content = document.getElementById("status");
+      if (response.message === "SUCCESS") {
+        content.classList.add("success");
+        content.classList.remove("failure");
+      } else {
+        content.classList.remove("success");
+        content.classList.add("failure");
+      }
       content.innerText = response.content;
       const button = document.getElementById("saveJobButton");
       button.disabled = false;
