@@ -19,6 +19,22 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
           sendResponse({ message: "FAILURE", content: error.message });
       });
     return true;
+  } else if (request.action === "GETSAVEDJOBS") {
+    getRecentlySavedJobs()
+      .then((data) => {
+        sendResponse({
+          message: "SUCCESS",
+          content: data,
+        });
+      })
+      .catch((error) => {
+        sendResponse({
+          message: "FAILURE",
+          error: error,
+        });
+      });
+
+    return true;
   }
 });
 
@@ -60,7 +76,7 @@ Respond only with the JSON object, without any additional text or explanation.
               content: jobDescription,
             },
           ],
-          model: "mixtral-8x7b-32768",
+          model: "mistral-saba-24b",
           stream: false,
           response_format: {
             type: "json_object",
@@ -179,6 +195,51 @@ const saveJobPosting = async (data) => {
     return responseData;
   } catch (error) {
     console.error("notionAPIRequest: ", error);
+    throw error;
+  }
+};
+
+const getRecentlySavedJobs = async () => {
+  const url = `https://api.notion.com/v1/databases/${NOTIONDATABASEID}/query`;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${NOTIONAPIKEY}`,
+        "Content-Type": "application/json",
+        "Notion-Version": "2022-06-28",
+      },
+      body: JSON.stringify({
+        // sorts: [{ property: "Created Date", direction: "ascending" }],
+        filter: {
+          property: "Status",
+          status: {
+            equals: "Not Applied",
+          },
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch data: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    return data.results.map((content) => {
+      var { properties } = content;
+
+      return {
+        link: properties.link,
+        country: properties.Country.select.name,
+        company: properties.Company.select.name,
+        url: properties.URL.url,
+        title: properties.Link.title[0].plain_text,
+      };
+    });
+  } catch (error) {
+    console.error("Error fetching data from Notion:", error);
     throw error;
   }
 };

@@ -1,18 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Page Content Fetcher</title>
-  <link rel="stylesheet" href="styles.css"/>
-</head>
-<body>
-  <div class="container">
-    <h1>Job Saver</h1>
-    <p>Click the button below to extract content from the page.</p>
-    <button class="button-28" role="button" id="saveJobButton">Save Job Posting</button>
-    <div id="status" class="status-message">Status: Idle</div>
-  </div>
-  <script src="script.js" type="module"></script>
-</body>
+    <head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Page Content Fetcher</title>
+	<link rel="stylesheet" href="styles.css"/>
+    </head>
+    <body>
+	<div class="container">
+	    <h1>Job Saver</h1>
+	    <p>Click the button below to extract content from the page.</p>
+	    <button class="button-28" role="button" id="saveJobButton">Save Job Posting</button>
+	    <button class="button-28" role="button" id="getJobs">Get Saved Jobs</button>
+	    <button class="button-28" role="button" id="getStats">Get Stats</button>
+	    <div class="container">
+		<table class="rwd-table">
+		    <tbody class='recently-saved-jobs'>
+			<tr>
+			    <th>Company</th>
+			    <th>Country</th>
+			    <th>URL</th>
+			    <th>Title</th>
+			</tr>
+		    </tbody>
+		</table>
+	    </div>
+	</div>
+	</div>
+	<script src="script.js" type="module"></script>
+    </body>
 </html>

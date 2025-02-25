@@ -4,7 +4,6 @@ document
     const button = document.getElementById("saveJobButton");
 
     button.disabled = true;
-    button.textContent = "Loading...";
 
     const [tab] = await chrome.tabs.query({
       active: true,
@@ -47,19 +46,54 @@ function saveJob(url, text) {
         url: url,
       },
     },
-    (response) => {
-      const content = document.getElementById("status");
-      if (response.message === "SUCCESS") {
-        content.classList.add("success");
-        content.classList.remove("failure");
-      } else {
-        content.classList.remove("success");
-        content.classList.add("failure");
-      }
-      content.innerText = response.content;
+    (_) => {
       const button = document.getElementById("saveJobButton");
       button.disabled = false;
-      button.textContent = "Save Job Posting";
     },
   );
 }
+
+var getJobsButton = document.querySelector("#getJobs");
+
+getJobsButton?.addEventListener("click", () => {
+  var button = document.querySelector("#getJobs");
+  button.disabled = true;
+  chrome.runtime.sendMessage(
+    {
+      action: "GETSAVEDJOBS",
+    },
+    (response) => {
+      if (response.message === "SUCCESS") {
+        var table = document.querySelector(".recently-saved-jobs");
+        var tableContent = `
+	    <tr>
+		<th>Company</th>
+		<th>Country</th>
+		<th>URL</th>
+		<th>Title</th>
+	    </tr>
+	`;
+        response.content.forEach((data) => {
+          tableContent += `
+	   <tr>
+		<td data-th="Title">
+		${data.title}
+		</td>
+		<td data-th="Company">
+		${data.company}
+		</td>
+		<td data-th="Country">
+		${data.country}
+		</td>
+		<td data-th="URL">
+		    <a href="${data.URL}" target="_blank">Apply Here</a>
+		</td>
+	   </tr>
+	  `;
+        });
+        table.innerHTML = tableContent;
+      }
+      button.disabled = false;
+    },
+  );
+});
