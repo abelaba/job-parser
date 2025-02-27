@@ -35,6 +35,22 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
       });
 
     return true;
+  } else if (request.action === "GETSTATS") {
+    getStats()
+      .then((data) => {
+        sendResponse({
+          message: "SUCCESS",
+          content: data,
+        });
+      })
+      .catch((error) => {
+        sendResponse({
+          message: "FAILURE",
+          error: error,
+        });
+      });
+
+    return true;
   }
 });
 
@@ -238,6 +254,43 @@ const getRecentlySavedJobs = async () => {
         title: properties.Link.title[0].plain_text,
       };
     });
+  } catch (error) {
+    console.error("Error fetching data from Notion:", error);
+    throw error;
+  }
+};
+
+const getStats = async () => {
+  const url = `https://api.notion.com/v1/databases/${NOTIONDATABASEID}/query`;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${NOTIONAPIKEY}`,
+        "Content-Type": "application/json",
+        "Notion-Version": "2022-06-28",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch data: ${response.statusText}`);
+    }
+
+    const responseJSON = await response.json();
+
+    const count = {};
+
+    responseJSON.results.forEach((data) => {
+      const { name } = data.properties.Status.status;
+      if (count[name] === undefined) {
+        count[name] = 1;
+      } else {
+        count[name] += 1;
+      }
+    });
+
+    return count;
   } catch (error) {
     console.error("Error fetching data from Notion:", error);
     throw error;

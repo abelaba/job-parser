@@ -97,3 +97,42 @@ getJobsButton?.addEventListener("click", () => {
     },
   );
 });
+
+var getStatsButton = document.querySelector("#getStats");
+
+getStatsButton?.addEventListener("click", () => {
+  var button = document.querySelector("#getStats");
+  button.disabled = true;
+  chrome.runtime.sendMessage(
+    {
+      action: "GETSTATS",
+    },
+    (response) => {
+      if (response.message === "SUCCESS") {
+        var ctx = document.getElementById("myChart").getContext("2d");
+        const labels = Object.keys(response.content);
+        const values = Object.values(response.content);
+        const colors = values.map(() => {
+          const r = Math.floor(Math.random() * 256);
+          const g = Math.floor(Math.random() * 256);
+          const b = Math.floor(Math.random() * 256);
+          return `rgba(${r}, ${g}, ${b}, 0.6)`;
+        });
+        new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: "Jobs",
+                data: values,
+                backgroundColor: colors,
+              },
+            ],
+          },
+        });
+      }
+      button.disabled = false;
+    },
+  );
+});
