@@ -4,32 +4,37 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Page Content Fetcher</title>
-	<link rel="stylesheet" href="styles.css"/>
+	<link rel="stylesheet" href="tailwind.css"/>
     </head>
-    <body>
-	<div class="container">
-	    <h1>Job Saver</h1>
-	    <p>Click the button below to extract content from the page.</p>
-	    <button class="button-28" role="button" id="saveJobButton">Save Job Posting</button>
-	    <button class="button-28" role="button" id="getJobs">Get Saved Jobs</button>
-	    <button class="button-28" role="button" id="getStats">Get Stats</button>
-	    <div class="container">
-		<table class="rwd-table">
-		    <tbody class='recently-saved-jobs'>
-			<tr>
-			    <th>Company</th>
-			    <th>Country</th>
-			    <th>URL</th>
-			    <th>Title</th>
-			</tr>
-		    </tbody>
-		</table>
-		<div>
-		    <canvas id="myChart"></canvas>
+    <body class='p-4'>
+	<button class="cursor-pointer bg-transparent hover:bg-blue-500 text-blue-700 font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded" role="button" id="saveJobButton">Save Job Posting</button>
+
+	<div class="rounded mx-auto mt-4">
+	    <ul id="tabs" class="pt-2 px-1 w-full flex flex-row justify-center p-2">
+		<li class="text-xl px-4 border-b-zinc-300 border-b-2 py-2" id="getJobs"><a id="default-tab" href="#first">Jobs</a></li>
+		<li class="text-xl px-4 border-b-zinc-300 py-2" id="getStats"><a href="#second">Stats</a></li>
+	    </ul>
+
+	    <div id="tab-contents">
+		<div id="first">
+		    <table class="rwd-table">
+			<tbody class='recently-saved-jobs'>
+			    <tr>
+				<th>Company</th>
+				<th>Country</th>
+				<th>URL</th>
+				<th>Title</th>
+			    </tr>
+			</tbody>
+		    </table>
+
+		</div>
+		<div id="second" class="hidden">
+		    <canvas id="myChart"></canvas>		
 		</div>
 	    </div>
 	</div>
-	</div>
+
 	<script src="libs/chart.umd.js"></script>
 	<script src="script.js" type="module"></script>
     </body>
