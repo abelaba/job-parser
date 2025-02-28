@@ -4,17 +4,17 @@
   "version": "1.0",
   "manifest_version": 3,
   "action": {
-    "default_popup": "index.html",
+    "default_popup": "dist/index.html",
     "default_icon": "images/icon.png"
   },
   "permissions": ["activeTab","scripting"],
   "host_permissions": ["<all_urls>"],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "dist/background.js"
   },
   "web_accessible_resources": [
     {
-      "resources": ["libs/*"],
+      "resources": ["dist/libs"],
       "matches": ["<all_urls>"]
     }
   ]
