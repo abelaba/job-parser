@@ -2,7 +2,6 @@ document
   .getElementById("saveJobButton")
   ?.addEventListener("click", async () => {
     const button = document.getElementById("saveJobButton");
-
     button.disabled = true;
 
     const [tab] = await chrome.tabs.query({
@@ -30,7 +29,6 @@ document
             alert("Problem parsing content");
             console.error("Problem parsing content");
             button.disabled = false;
-            button.textContent = "Save Job Posting";
           }
         },
       );
@@ -61,33 +59,21 @@ const getSavedJobs = () => {
     (response) => {
       if (response.message === "SUCCESS") {
         var table = document.querySelector(".recently-saved-jobs");
-        var tableContent = `
-	    <tr>
-		<th>Company</th>
-		<th>Country</th>
-		<th>URL</th>
-		<th>Title</th>
-	    </tr>
-	`;
         response.content.forEach((data) => {
-          tableContent += `
-	   <tr>
-		<td data-th="Title">
-		${data.title}
-		</td>
-		<td data-th="Company">
-		${data.company}
-		</td>
-		<td data-th="Country">
-		${data.country}
-		</td>
-		<td data-th="URL">
-		    <a href="${data.URL}" target="_blank">Apply Here</a>
-		</td>
-	   </tr>
-	  `;
+          const row = document.createElement("tr");
+          row.className =
+            "hover:bg-slate-100 cursor-pointer odd:bg-white even:bg-slate-50";
+          row.innerHTML = `
+		<td class="px-4 py-2">${data.title}</td>
+		<td class="px-4 py-2">${data.company}</td>
+		<td class="px-4 py-2">${data.country}</td>
+	    `;
+          row.addEventListener("click", () => {
+            window.open(data.url, "_blank");
+          });
+
+          table.appendChild(row);
         });
-        table.innerHTML = tableContent;
       }
     },
   );
@@ -103,12 +89,19 @@ const getStats = () => {
         var ctx = document.getElementById("myChart").getContext("2d");
         const labels = Object.keys(response.content);
         const values = Object.values(response.content);
-        const colors = values.map(() => {
-          const r = Math.floor(Math.random() * 256);
-          const g = Math.floor(Math.random() * 256);
-          const b = Math.floor(Math.random() * 256);
-          return `rgba(${r}, ${g}, ${b}, 0.6)`;
-        });
+        const colors = [
+          "rgba(255, 99, 132, 0.6)",
+          "rgba(54, 162, 235, 0.6)",
+          "rgba(255, 206, 86, 0.6)",
+          "rgba(75, 192, 192, 0.6)",
+          "rgba(153, 102, 255, 0.6)",
+          "rgba(255, 159, 64, 0.6)",
+          "rgba(100, 149, 237, 0.6)",
+          "rgba(34, 193, 195, 0.6)",
+          "rgba(253, 187, 45, 0.6)",
+          "rgba(231, 76, 60, 0.6)",
+          "rgba(46, 204, 113, 0.6)",
+        ];
         new Chart(ctx, {
           type: "pie",
           data: {
@@ -117,7 +110,7 @@ const getStats = () => {
               {
                 label: "Jobs",
                 data: values,
-                backgroundColor: colors,
+                backgroundColor: colors.slice(0, values.length),
               },
             ],
           },
