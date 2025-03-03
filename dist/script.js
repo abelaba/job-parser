@@ -1,3 +1,28 @@
+const modal = document.querySelector('.main-modal')
+const closeButton = document.querySelector('.modal-close')
+closeButton.onclick = () => modalClose()
+modal.style.display = 'none'
+
+const modalClose = () => {
+  modal.classList.remove('fadeIn')
+  modal.classList.add('fadeOut')
+  setTimeout(() => {
+    modal.style.display = 'none'
+  }, 500)
+}
+
+const openModal = (description) => {
+  modal.classList.remove('fadeOut')
+  modal.classList.add('fadeIn')
+  modal.style.display = 'flex'
+  const modalDescription = document.querySelector('.modal-description')
+  modalDescription.innerHTML = `<p> ${description} </p>`
+}
+
+window.onclick = function (event) {
+  if (event.target == modal) modalClose()
+}
+
 document.getElementById('saveJobButton')?.addEventListener('click', async () => {
   const button = document.getElementById('saveJobButton')
   button.disabled = true
@@ -36,7 +61,7 @@ document.getElementById('saveJobButton')?.addEventListener('click', async () => 
 function saveJob(url, text) {
   chrome.runtime.sendMessage(
     {
-      action: 'makeAPICall',
+      action: 'SAVEJOB',
       data: {
         jobDescription: text,
         url: url,
@@ -67,7 +92,10 @@ const getSavedJobs = () => {
 		<td class="px-4 py-2">${data.country}</td>
 	    `
           row.addEventListener('click', () => {
-            window.open(data.url, '_blank')
+            openModal(data.description)
+            document.querySelector('.apply-button').addEventListener('click', () => {
+              window.open(data.url, '_blank')
+            })
           })
 
           table.appendChild(row)

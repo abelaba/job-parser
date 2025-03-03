@@ -1,10 +1,10 @@
-const GROQAPIKEY = "";
-const NOTIONAPIKEY = "";
-const NOTIONDATABASEID = "";
+const GROQAPIKEY = ''
+const NOTIONAPIKEY = ''
+const NOTIONDATABASEID = ''
 
 chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
-  if (request.action === 'makeAPICall') {
-    call(request.data)
+  if (request.action === 'SAVEJOB') {
+    saveJob(request.data)
       .then((data) => {
         const title = data.properties.Link.title[0].plain_text
         const company = data.properties.Company.select.name
@@ -53,16 +53,12 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
   }
 })
 
-const call = async (data) => {
-  try {
-    await checkIfJobPostingExists(data.url)
+const saveJob = async (data) => {
+  await checkIfJobPostingExists(data.url)
 
-    const parsedJSON = await formatDataToJSON(data.jobDescription)
-    parsedJSON['url'] = data.url
-    return await saveJobPosting(parsedJSON)
-  } catch (e) {
-    throw e
-  }
+  const parsedJSON = await formatDataToJSON(data.jobDescription)
+  parsedJSON['url'] = data.url
+  return await saveJobPosting(parsedJSON)
 }
 
 const formatDataToJSON = async (jobDescription) => {
@@ -237,14 +233,15 @@ const getRecentlySavedJobs = async () => {
     const data = await response.json()
 
     return data.results.map((content) => {
-      var { properties } = content
+      var { link, Company, Country, Link, Description, URL } = content.properties
 
       return {
-        link: properties.link,
-        country: properties.Country.select.name,
-        company: properties.Company.select.name,
-        url: properties.URL.url,
-        title: properties.Link.title[0].plain_text,
+        link: link,
+        country: Country.select.name,
+        company: Company.select.name,
+        url: URL.url,
+        title: Link.title[0].plain_text,
+        description: Description.rich_text[0].plain_text,
       }
     })
   } catch (error) {
