@@ -242,4 +242,33 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     )
   })
+
+  document.getElementById('searchInput').addEventListener('input', function (event) {
+    const searchTerm = event.target.value.toLowerCase()
+    const rows = document.querySelectorAll('tbody tr')
+    let hasResults = false
+
+    rows.forEach((row) => {
+      const title = row.cells[0].textContent.toLowerCase()
+      const company = row.cells[1].textContent.toLowerCase()
+      const country = row.cells[2].textContent.toLowerCase()
+
+      if (
+        title.includes(searchTerm) ||
+        company.includes(searchTerm) ||
+        country.includes(searchTerm)
+      ) {
+        row.style.display = ''
+        hasResults = true
+      } else {
+        row.style.display = 'none'
+      }
+    })
+    const noResultsMessage = document.getElementById('noResults')
+    if (hasResults) {
+      noResultsMessage.classList.add('hidden')
+    } else {
+      noResultsMessage.classList.remove('hidden')
+    }
+  })
 })

@@ -10,7 +10,7 @@
     <button
       id="saveJobButton"
       role="button"
-      class="fixed bottom-3 right-3 z-50 bg-gray-800 hover:bg-gray-800 text-white font-medium py-3 px-3 rounded-full shadow-lg transition-all duration-300 ease-in-out flex items-center justify-start cursor-pointer group overflow-hidden w-12 hover:w-32"
+      class="fixed bottom-2 right-2 z-50 bg-gray-800 hover:bg-gray-800 text-white font-medium py-2 px-2 rounded-full shadow-lg transition-all duration-300 ease-in-out flex items-center justify-start cursor-pointer group overflow-hidden w-10 hover:w-26"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -63,7 +63,7 @@
       </button>
     </div>
 
-    <div class="">
+    <div class="pb-4">
       <ul id="tabs" class="pt-2 px-1 flex flex-row p-2 justify-center">
         <li class="text-xl px-4 border-b-black border-b-2 py-2 font-bold" id="getJobs">
           <a id="default-tab" href="#first">Jobs</a>
@@ -75,7 +75,31 @@
 
       <div id="tab-contents">
         <div id="first">
-          <div class="w-full border border-slate-200 overflow-x-auto">
+          <div class="relative w-full max-w-sm mx-auto mb-4">
+            <svg
+              class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z"
+              />
+            </svg>
+
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="Search by title, company, or country"
+              class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl shadow-xs focus:outline-none focus:ring-1 focus:ring-slate-500 focus:border-transparent transition"
+            />
+          </div>
+
+          <div class="w-full overflow-x-auto">
             <table class="w-full divide-y divide-slate-200">
               <thead class="bg-slate-100 text-slate-800">
                 <tr>
@@ -88,6 +112,9 @@
                 class="divide-y divide-slate-200 bg-white text-slate-800 recently-saved-jobs"
               ></tbody>
             </table>
+            <div id="noResults" class="mt-4 text-center text-lg text-gray-500 hidden items-center">
+              <p>No results found</p>
+            </div>
           </div>
         </div>
         <div id="second" class="hidden flex justify-center w-full h-full">
