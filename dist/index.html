@@ -1,67 +1,78 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-    <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Page Content Fetcher</title>
-	<link rel="stylesheet" href="tailwind.css"/>
-    </head>
-    <body class=''>
-	<button 
-	    id="saveJobButton"
-	    role="button"
-	    class="fixed bottom-3 right-3 z-50 bg-gray-800 hover:bg-gray-800 text-white font-medium py-3 px-4 rounded-full shadow-lg transition-all duration-300 ease-in-out flex items-center justify-start cursor-pointer group overflow-hidden w-12 hover:w-32"
-	    >
-	    <svg 
-		xmlns="http://www.w3.org/2000/svg" 
-		fill="none" 
-		viewBox="0 0 24 24" 
-		stroke-width="1.5" 
-		stroke="currentColor" 
-		class="w-6 h-6 shrink-0"
-		>
-		<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 3.75H6.75A2.25 2.25 0 004.5 6v14.25l7.5-3.75 7.5 3.75V6a2.25 2.25 0 00-2.25-2.25z" />
-	    </svg>
-		<span class="whitespace-nowrap opacity-0 group-hover:opacity-100 group-hover:ml-2 transition-all duration-300">
-		    Save job
-		</span>
-	</button>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Page Content Fetcher</title>
+    <link rel="stylesheet" href="tailwind.css" />
+  </head>
+  <body class="">
+    <button
+      id="saveJobButton"
+      role="button"
+      class="fixed bottom-3 right-3 z-50 bg-gray-800 hover:bg-gray-800 text-white font-medium py-3 px-4 rounded-full shadow-lg transition-all duration-300 ease-in-out flex items-center justify-start cursor-pointer group overflow-hidden w-12 hover:w-32"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="currentColor"
+        class="w-6 h-6 shrink-0"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M17.25 3.75H6.75A2.25 2.25 0 004.5 6v14.25l7.5-3.75 7.5 3.75V6a2.25 2.25 0 00-2.25-2.25z"
+        />
+      </svg>
+      <span
+        class="whitespace-nowrap opacity-0 group-hover:opacity-100 group-hover:ml-2 transition-all duration-300"
+      >
+        Save job
+      </span>
+    </button>
 
-	<div class="h-20 text-white font-bold bg-gray-800 flex justify-center align-middle capitalize p-5">
-	    <p class="text-3xl"> Welcome </p>
-	</div>
+    <div
+      class="h-20 text-white font-bold bg-gray-800 flex justify-center align-middle capitalize p-5"
+    >
+      <p class="text-3xl">Welcome</p>
+    </div>
 
-	<div class="bg-slate-100">
-	    <ul id="tabs" class="pt-2 px-1 flex flex-row p-2 justify-center">
-		<li class="text-xl px-4 border-b-black border-b-2 py-2 font-bold" id="getJobs"><a id="default-tab" href="#first">Jobs</a></li>
-		<li class="text-xl px-4 border-b-black py-2 font-bold" id="getStats"><a href="#second">Stats</a></li>
-	    </ul>
+    <div class="bg-slate-100">
+      <ul id="tabs" class="pt-2 px-1 flex flex-row p-2 justify-center">
+        <li class="text-xl px-4 border-b-black border-b-2 py-2 font-bold" id="getJobs">
+          <a id="default-tab" href="#first">Jobs</a>
+        </li>
+        <li class="text-xl px-4 border-b-black py-2 font-bold" id="getStats">
+          <a href="#second">Stats</a>
+        </li>
+      </ul>
 
-	    <div id="tab-contents">
-		<div id="first">
-		    <div class="w-full border border-slate-200 overflow-x-auto">
-			<table class="w-full divide-y divide-slate-200">
-			    <thead class="bg-slate-100 text-slate-800">
-				<tr>
-				    <th class="px-4 py-2 text-start">Title</th>
-				    <th class="px-4 py-2 text-start">Company</th>
-				    <th class="px-4 py-2 text-start">Country</th>
-				</tr>
-			    </thead>
-			    <tbody class="divide-y divide-slate-200 bg-white text-slate-800 recently-saved-jobs">
-			    </tbody>
-			</table>
-		    </div>
-		</div>
-		<div id="second" class="hidden flex justify-center w-full">
-		    <canvas id="myChart"></canvas>		
-		</div>
-	    </div>
-	</div>
+      <div id="tab-contents">
+        <div id="first">
+          <div class="w-full border border-slate-200 overflow-x-auto">
+            <table class="w-full divide-y divide-slate-200">
+              <thead class="bg-slate-100 text-slate-800">
+                <tr>
+                  <th class="px-4 py-2 text-start">Title</th>
+                  <th class="px-4 py-2 text-start">Company</th>
+                  <th class="px-4 py-2 text-start">Country</th>
+                </tr>
+              </thead>
+              <tbody
+                class="divide-y divide-slate-200 bg-white text-slate-800 recently-saved-jobs"
+              ></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="second" class="hidden flex justify-center w-full">
+          <canvas id="myChart"></canvas>
+        </div>
+      </div>
+    </div>
 
-	<script src="libs/chart.umd.js"></script>
-	<script src="script.js" type="module"></script>
-    </body>
+    <script src="libs/chart.umd.js"></script>
+    <script src="script.js" type="module"></script>
+  </body>
 </html>
-
-

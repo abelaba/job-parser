@@ -1,8 +1,8 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-body{
-    width: 400px;
-    overflow: hidden;
+body {
+  width: 400px;
+  overflow: hidden;
 }
 
 body::-webkit-scrollbar {

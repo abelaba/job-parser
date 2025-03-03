@@ -3,159 +3,152 @@ const NOTIONAPIKEY = "";
 const NOTIONDATABASEID = "";
 
 chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
-  if (request.action === "makeAPICall") {
+  if (request.action === 'makeAPICall') {
     call(request.data)
       .then((data) => {
-        const title = data.properties.Link.title[0].plain_text;
-        const company = data.properties.Company.select.name;
+        const title = data.properties.Link.title[0].plain_text
+        const company = data.properties.Company.select.name
 
         sendResponse({
-          message: "SUCCESS",
+          message: 'SUCCESS',
           content: `The job "${title}" from ${company} has been successfully saved.`,
-        });
+        })
       })
       .catch((error) => {
-        console.error("Error:", error),
-          sendResponse({ message: "FAILURE", content: error.message });
-      });
-    return true;
-  } else if (request.action === "GETSAVEDJOBS") {
+        console.error('Error:', error), sendResponse({ message: 'FAILURE', content: error.message })
+      })
+    return true
+  } else if (request.action === 'GETSAVEDJOBS') {
     getRecentlySavedJobs()
       .then((data) => {
         sendResponse({
-          message: "SUCCESS",
+          message: 'SUCCESS',
           content: data,
-        });
+        })
       })
       .catch((error) => {
         sendResponse({
-          message: "FAILURE",
+          message: 'FAILURE',
           error: error,
-        });
-      });
+        })
+      })
 
-    return true;
-  } else if (request.action === "GETSTATS") {
+    return true
+  } else if (request.action === 'GETSTATS') {
     getStats()
       .then((data) => {
         sendResponse({
-          message: "SUCCESS",
+          message: 'SUCCESS',
           content: data,
-        });
+        })
       })
       .catch((error) => {
         sendResponse({
-          message: "FAILURE",
+          message: 'FAILURE',
           error: error,
-        });
-      });
+        })
+      })
 
-    return true;
+    return true
   }
-});
+})
 
 const call = async (data) => {
   try {
-    await checkIfJobPostingExists(data.url);
+    await checkIfJobPostingExists(data.url)
 
-    const parsedJSON = await formatDataToJSON(data.jobDescription);
-    parsedJSON["url"] = data.url;
-    return await saveJobPosting(parsedJSON);
+    const parsedJSON = await formatDataToJSON(data.jobDescription)
+    parsedJSON['url'] = data.url
+    return await saveJobPosting(parsedJSON)
   } catch (e) {
-    throw e;
+    throw e
   }
-};
+}
 
 const formatDataToJSON = async (jobDescription) => {
   try {
-    const response = await fetch(
-      "https://api.groq.com/openai/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${GROQAPIKEY}`,
-        },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: "system",
-              content: `
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${GROQAPIKEY}`,
+      },
+      body: JSON.stringify({
+        messages: [
+          {
+            role: 'system',
+            content: `
 	      Provide the job title and the country from the job description as a JSON object in the following format:
 { "jobTitle": "<job-title>", "country": "<country>",  "company": "<company>", "description": <a short description of minimum qualifications and required qualifications as text with bullet points> }
 
 Respond only with the JSON object, without any additional text or explanation.
 	      `,
-            },
-            {
-              role: "user",
-              content: jobDescription,
-            },
-          ],
-          model: "mistral-saba-24b",
-          stream: false,
-          response_format: {
-            type: "json_object",
           },
-        }),
-      },
-    );
+          {
+            role: 'user',
+            content: jobDescription,
+          },
+        ],
+        model: 'mistral-saba-24b',
+        stream: false,
+        response_format: {
+          type: 'json_object',
+        },
+      }),
+    })
 
-    const responseData = await response.json();
+    const responseData = await response.json()
     if (responseData.error) {
-      throw new Error(responseData.error.message);
+      throw new Error(responseData.error.message)
     }
-    const message = responseData.choices[0].message.content;
-    const parsedJSON = JSON.parse(message);
-    return parsedJSON;
+    const message = responseData.choices[0].message.content
+    const parsedJSON = JSON.parse(message)
+    return parsedJSON
   } catch (error) {
-    console.log("groqAPIRequest:", error);
-    throw error;
+    console.log('groqAPIRequest:', error)
+    throw error
   }
-};
+}
 
 const checkIfJobPostingExists = async (url) => {
   try {
-    const response = await fetch(
-      `https://api.notion.com/v1/databases/${NOTIONDATABASEID}/query`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${NOTIONAPIKEY}`,
-          "Notion-Version": "2022-06-28",
-        },
-        body: JSON.stringify({
-          filter: {
-            property: "URL",
-            url: {
-              equals: url,
-            },
-          },
-        }),
+    const response = await fetch(`https://api.notion.com/v1/databases/${NOTIONDATABASEID}/query`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${NOTIONAPIKEY}`,
+        'Notion-Version': '2022-06-28',
       },
-    );
+      body: JSON.stringify({
+        filter: {
+          property: 'URL',
+          url: {
+            equals: url,
+          },
+        },
+      }),
+    })
 
-    const responseData = await response.json();
-    const exists = responseData.results && responseData.results.length > 0;
+    const responseData = await response.json()
+    const exists = responseData.results && responseData.results.length > 0
     if (exists) {
-      throw new Error("URL already exists in the Notion database.");
+      throw new Error('URL already exists in the Notion database.')
     }
   } catch (error) {
-    console.error("checkIfURLExistsInNotion: ", error);
+    console.error('checkIfURLExistsInNotion: ', error)
 
-    throw error;
+    throw error
   }
-};
+}
 
 const saveJobPosting = async (data) => {
   try {
-    const response = await fetch("https://api.notion.com/v1/pages", {
-      method: "POST",
+    const response = await fetch('https://api.notion.com/v1/pages', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${NOTIONAPIKEY}`,
-        "Notion-Version": "2022-06-28",
+        'Notion-Version': '2022-06-28',
       },
       body: JSON.stringify({
         parent: {
@@ -176,7 +169,7 @@ const saveJobPosting = async (data) => {
           },
           Status: {
             status: {
-              name: "Not Applied",
+              name: 'Not Applied',
             },
           },
           Country: {
@@ -195,7 +188,7 @@ const saveJobPosting = async (data) => {
           Description: {
             rich_text: [
               {
-                type: "text",
+                type: 'text',
                 text: {
                   content: data.description,
                 },
@@ -204,47 +197,47 @@ const saveJobPosting = async (data) => {
           },
         },
       }),
-    });
+    })
 
-    const responseData = await response.json();
-    console.log(responseData);
-    return responseData;
+    const responseData = await response.json()
+    console.log(responseData)
+    return responseData
   } catch (error) {
-    console.error("notionAPIRequest: ", error);
-    throw error;
+    console.error('notionAPIRequest: ', error)
+    throw error
   }
-};
+}
 
 const getRecentlySavedJobs = async () => {
-  const url = `https://api.notion.com/v1/databases/${NOTIONDATABASEID}/query`;
+  const url = `https://api.notion.com/v1/databases/${NOTIONDATABASEID}/query`
 
   try {
     const response = await fetch(url, {
-      method: "POST",
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${NOTIONAPIKEY}`,
-        "Content-Type": "application/json",
-        "Notion-Version": "2022-06-28",
+        'Content-Type': 'application/json',
+        'Notion-Version': '2022-06-28',
       },
       body: JSON.stringify({
         // sorts: [{ property: "Created Date", direction: "ascending" }],
         filter: {
-          property: "Status",
+          property: 'Status',
           status: {
-            equals: "Not Applied",
+            equals: 'Not Applied',
           },
         },
       }),
-    });
+    })
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch data: ${response.statusText}`);
+      throw new Error(`Failed to fetch data: ${response.statusText}`)
     }
 
-    const data = await response.json();
+    const data = await response.json()
 
     return data.results.map((content) => {
-      var { properties } = content;
+      var { properties } = content
 
       return {
         link: properties.link,
@@ -252,47 +245,47 @@ const getRecentlySavedJobs = async () => {
         company: properties.Company.select.name,
         url: properties.URL.url,
         title: properties.Link.title[0].plain_text,
-      };
-    });
+      }
+    })
   } catch (error) {
-    console.error("Error fetching data from Notion:", error);
-    throw error;
+    console.error('Error fetching data from Notion:', error)
+    throw error
   }
-};
+}
 
 const getStats = async () => {
-  const url = `https://api.notion.com/v1/databases/${NOTIONDATABASEID}/query`;
+  const url = `https://api.notion.com/v1/databases/${NOTIONDATABASEID}/query`
 
   try {
     const response = await fetch(url, {
-      method: "POST",
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${NOTIONAPIKEY}`,
-        "Content-Type": "application/json",
-        "Notion-Version": "2022-06-28",
+        'Content-Type': 'application/json',
+        'Notion-Version': '2022-06-28',
       },
-    });
+    })
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch data: ${response.statusText}`);
+      throw new Error(`Failed to fetch data: ${response.statusText}`)
     }
 
-    const responseJSON = await response.json();
+    const responseJSON = await response.json()
 
-    const count = {};
+    const count = {}
 
     responseJSON.results.forEach((data) => {
-      const { name } = data.properties.Status.status;
+      const { name } = data.properties.Status.status
       if (count[name] === undefined) {
-        count[name] = 1;
+        count[name] = 1
       } else {
-        count[name] += 1;
+        count[name] += 1
       }
-    });
+    })
 
-    return count;
+    return count
   } catch (error) {
-    console.error("Error fetching data from Notion:", error);
-    throw error;
+    console.error('Error fetching data from Notion:', error)
+    throw error
   }
-};
+}
