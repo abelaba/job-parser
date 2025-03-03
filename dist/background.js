@@ -1,6 +1,11 @@
-const GROQAPIKEY = ''
-const NOTIONAPIKEY = ''
-const NOTIONDATABASEID = ''
+async function getStorageValue(key) {
+  const result = await new Promise((resolve) => {
+    chrome.storage.local.get([key], (res) => {
+      resolve(res[key])
+    })
+  })
+  return result
+}
 
 chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
   if (request.action === 'SAVEJOB') {
@@ -63,6 +68,7 @@ const saveJob = async (data) => {
 
 const formatDataToJSON = async (jobDescription) => {
   try {
+    const GROQAPIKEY = getStorageValue('groqAPIKey')
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -108,6 +114,8 @@ Respond only with the JSON object, without any additional text or explanation.
 
 const checkIfJobPostingExists = async (url) => {
   try {
+    const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
+    const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
     const response = await fetch(`https://api.notion.com/v1/databases/${NOTIONDATABASEID}/query`, {
       method: 'POST',
       headers: {
@@ -139,6 +147,9 @@ const checkIfJobPostingExists = async (url) => {
 
 const saveJobPosting = async (data) => {
   try {
+    const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
+    const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
+
     const response = await fetch('https://api.notion.com/v1/pages', {
       method: 'POST',
       headers: {
@@ -205,9 +216,10 @@ const saveJobPosting = async (data) => {
 }
 
 const getRecentlySavedJobs = async () => {
-  const url = `https://api.notion.com/v1/databases/${NOTIONDATABASEID}/query`
-
   try {
+    const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
+    const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
+    const url = `https://api.notion.com/v1/databases/${NOTIONDATABASEID}/query`
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -251,9 +263,11 @@ const getRecentlySavedJobs = async () => {
 }
 
 const getStats = async () => {
-  const url = `https://api.notion.com/v1/databases/${NOTIONDATABASEID}/query`
-
   try {
+    const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
+    const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
+
+    const url = `https://api.notion.com/v1/databases/${NOTIONDATABASEID}/query`
     const response = await fetch(url, {
       method: 'POST',
       headers: {

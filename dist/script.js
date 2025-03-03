@@ -6,17 +6,21 @@ modal.style.display = 'none'
 const modalClose = () => {
   modal.classList.remove('fadeIn')
   modal.classList.add('fadeOut')
+  document.querySelector('.apply-button').classList.add('hidden')
+  document.querySelector('.settings-save-button').classList.add('hidden')
   setTimeout(() => {
     modal.style.display = 'none'
   }, 500)
 }
 
-const openModal = (description) => {
+const openModal = (title, description) => {
+  const modalTitle = document.querySelector('.modal-title')
+  modalTitle.innerHTML = title
+  const modalDescription = document.querySelector('.modal-description')
+  modalDescription.innerHTML = description
   modal.classList.remove('fadeOut')
   modal.classList.add('fadeIn')
   modal.style.display = 'flex'
-  const modalDescription = document.querySelector('.modal-description')
-  modalDescription.innerHTML = `<p> ${description} </p>`
 }
 
 window.onclick = function (event) {
@@ -91,11 +95,11 @@ const getSavedJobs = () => {
 		<td class="px-4 py-2">${data.company}</td>
 		<td class="px-4 py-2">${data.country}</td>
 	    `
+
           row.addEventListener('click', () => {
-            openModal(data.description)
-            document.querySelector('.apply-button').addEventListener('click', () => {
-              window.open(data.url, '_blank')
-            })
+            openModal('Job Qualification', `<p> ${data.description} </p>`)
+            document.querySelector('.apply-button').classList.remove('hidden')
+            document.querySelector('.apply-button').href = data.url
           })
 
           table.appendChild(row)
@@ -150,6 +154,51 @@ const getStats = () => {
   )
 }
 
+document.querySelector('.settings-button').addEventListener('click', () => {
+  document.querySelector('.settings-save-button').classList.remove('hidden')
+  chrome.storage.local.get(['groqAPIKey', 'notionAPIKey', 'notionDatabaseID'], (result) => {
+    openModal(
+      'Settings',
+      `
+	<div class="mb-4">
+	<label for="groq-api-key" class="block text-sm font-medium text-gray-700">Groq API Key</label>
+	<input
+    id="groq-api-key"
+    type="text"
+    class="mt-1 p-2 w-full border border-gray-300 rounded-lg"
+    placeholder="Enter Groq API Key"
+	value = ${result.groqAPIKey}
+	/>
+	</div>
+
+	<!-- Input for Notion Database ID -->
+	<div class="mb-4">
+	<label for="notion-database-id" class="block text-sm font-medium text-gray-700">Notion Database ID</label>
+	<input
+    id="notion-database-id"
+    type="text"
+    class="mt-1 p-2 w-full border border-gray-300 rounded-lg"
+    placeholder="Enter Notion Database ID"
+	value = ${result.notionDatabaseID}
+	/>
+	</div>
+
+	<!-- Input for Notion API Key -->
+	<div class="mb-4">
+	<label for="notion-api-key" class="block text-sm font-medium text-gray-700">Notion API Key</label>
+	<input
+    id="notion-api-key"
+    type="text"
+    class="mt-1 p-2 w-full border border-gray-300 rounded-lg"
+    placeholder="Enter Notion API Key"
+	value = ${result.notionAPIKey}
+	/>
+	</div>
+	`
+    )
+  })
+})
+
 document.addEventListener('DOMContentLoaded', () => {
   getSavedJobs()
   getStats()
@@ -176,5 +225,21 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       e.target.parentElement.classList.add('border-b-2')
     })
+  })
+  document.querySelector('.settings-save-button').addEventListener('click', () => {
+    const groqAPIKey = document.querySelector('#groq-api-key').value
+    const notionAPIKey = document.querySelector('#notion-api-key').value
+    const notionDatabaseID = document.querySelector('#notion-database-id').value
+
+    chrome.storage.local.set(
+      {
+        groqAPIKey: groqAPIKey,
+        notionAPIKey: notionAPIKey,
+        notionDatabaseID: notionDatabaseID,
+      },
+      () => {
+        console.log('Settings saved!')
+      }
+    )
   })
 })
