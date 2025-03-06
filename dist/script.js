@@ -154,6 +154,28 @@ const getStats = () => {
   )
 }
 
+const getStreak = () => {
+  chrome.runtime.sendMessage(
+    {
+      action: 'GETSTREAK',
+    },
+    (response) => {
+      if (response.message === 'SUCCESS') {
+        const { lastAppliedDate, currentStreak } = response.content
+        document.querySelector('#streakCount').innerHTML = currentStreak
+        if (currentStreak === 0) {
+          document.querySelector('.flame-color').classList.add('hidden')
+          document.querySelector('.flame-no-color').classList.remove('hidden')
+        } else {
+          document.querySelector('.flame-color').classList.remove('hidden')
+          document.querySelector('.flame-no-color').classList.add('hidden')
+        }
+        document.querySelector('#lastAppliedDate').textContent = lastAppliedDate
+      }
+    }
+  )
+}
+
 document.querySelector('.settings-button').addEventListener('click', () => {
   document.querySelector('.settings-save-button').classList.remove('hidden')
   chrome.storage.local.get(['groqAPIKey', 'notionAPIKey', 'notionDatabaseID'], (result) => {
@@ -202,6 +224,7 @@ document.querySelector('.settings-button').addEventListener('click', () => {
 document.addEventListener('DOMContentLoaded', () => {
   getSavedJobs()
   getStats()
+  getStreak()
 
   let tabsContainer = document.querySelector('#tabs')
 

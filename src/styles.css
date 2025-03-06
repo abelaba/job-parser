@@ -10,6 +10,18 @@ body::-webkit-scrollbar {
   display: none;
 }
 
+.cls-3 {
+  fill: url(#linear-gradient-1);
+}
+
+.cls-4 {
+  fill: #fc9502;
+}
+
+.cls-5 {
+  fill: #fce202;
+}
+
 .animated {
   -webkit-animation-duration: 1s;
   animation-duration: 1s;

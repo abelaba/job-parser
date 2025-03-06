@@ -8,6 +8,8 @@ async function getStorageValue(key) {
 }
 
 chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
+  const [SUCCESSMESSAGE, FAILUREMESSAGE] = ['SUCCESS', 'FAILURE']
+
   if (request.action === 'SAVEJOB') {
     saveJob(request.data)
       .then((data) => {
@@ -15,25 +17,25 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
         const company = data.properties.Company.select.name
 
         sendResponse({
-          message: 'SUCCESS',
+          message: SUCCESSMESSAGE,
           content: `The job "${title}" from ${company} has been successfully saved.`,
         })
       })
       .catch((error) => {
-        console.error('Error:', error), sendResponse({ message: 'FAILURE', content: error.message })
+        sendResponse({ message: FAILUREMESSAGE, content: error.message })
       })
     return true
   } else if (request.action === 'GETSAVEDJOBS') {
     getRecentlySavedJobs()
       .then((data) => {
         sendResponse({
-          message: 'SUCCESS',
+          message: SUCCESSMESSAGE,
           content: data,
         })
       })
       .catch((error) => {
         sendResponse({
-          message: 'FAILURE',
+          message: FAILUREMESSAGE,
           error: error,
         })
       })
@@ -43,13 +45,29 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
     getStats()
       .then((data) => {
         sendResponse({
-          message: 'SUCCESS',
+          message: SUCCESSMESSAGE,
           content: data,
         })
       })
       .catch((error) => {
         sendResponse({
-          message: 'FAILURE',
+          message: FAILUREMESSAGE,
+          error: error,
+        })
+      })
+
+    return true
+  } else if (request.action === 'GETSTREAK') {
+    getStreak()
+      .then((data) => {
+        sendResponse({
+          message: SUCCESSMESSAGE,
+          content: data,
+        })
+      })
+      .catch((error) => {
+        sendResponse({
+          message: FAILUREMESSAGE,
           error: error,
         })
       })
@@ -295,6 +313,90 @@ const getStats = async () => {
     })
 
     return count
+  } catch (error) {
+    console.error('Error fetching data from Notion:', error)
+    throw error
+  }
+}
+
+const getStreak = async () => {
+  try {
+    const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
+    const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
+    const url = `https://api.notion.com/v1/databases/${NOTIONDATABASEID}/query`
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${NOTIONAPIKEY}`,
+        'Content-Type': 'application/json',
+        'Notion-Version': '2022-06-28',
+      },
+      body: JSON.stringify({
+        sorts: [{ property: 'Applied Date', direction: 'descending' }],
+        filter: {
+          property: 'Applied Date',
+          date: {
+            is_not_empty: true,
+          },
+        },
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch data: ${response.statusText}`)
+    }
+
+    const responseJSON = await response.json()
+    const dates = responseJSON.results.map((data) => data.properties['Applied Date'].date.start)
+    if (dates.length === 0) {
+      return { maxStreak: 0, currentStreak: 0, lastAppliedDate: '' }
+    }
+
+    const parsed = dates.map((d) => new Date(d))
+    let maxStreak = 1
+    let currentStreak = 1
+
+    for (let i = 1; i < parsed.length; i++) {
+      const prev = parsed[i - 1]
+      const curr = parsed[i]
+
+      const diffDays = Math.floor((prev - curr) / (1000 * 60 * 60 * 24))
+
+      if (diffDays === 1) {
+        currentStreak++
+        maxStreak = Math.max(maxStreak, currentStreak)
+      } else {
+        currentStreak = 1
+      }
+    }
+
+    let realCurrentStreak = 0
+    let today = new Date()
+    today.setHours(0, 0, 0, 0)
+    let currentDate = today
+
+    for (let i = 0; i < parsed.length; i++) {
+      const streakDate = parsed[i]
+      streakDate.setHours(0, 0, 0, 0)
+
+      const diffDays = Math.floor((currentDate - streakDate) / (1000 * 60 * 60 * 24))
+
+      if (diffDays === 0) {
+        realCurrentStreak++
+      } else if (i !== 0 && diffDays === 1) {
+        realCurrentStreak++
+        currentDate = streakDate
+      } else {
+        break
+      }
+
+      currentDate = streakDate
+    }
+    return {
+      maxStreak: maxStreak,
+      currentStreak: realCurrentStreak,
+      lastAppliedDate: dates[0],
+    }
   } catch (error) {
     console.error('Error fetching data from Notion:', error)
     throw error
