@@ -7,6 +7,15 @@ async function getStorageValue(key) {
   return result
 }
 
+const sendNotification = (title, message) => {
+  chrome.notifications.create({
+    type: 'basic',
+    iconUrl: '../images/icon.png',
+    title: title,
+    message: message,
+  })
+}
+
 chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
   const [SUCCESSMESSAGE, FAILUREMESSAGE] = ['SUCCESS', 'FAILURE']
 
@@ -15,13 +24,17 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
       .then((data) => {
         const title = data.properties.Link.title[0].plain_text
         const company = data.properties.Company.select.name
-
+        sendNotification(
+          SUCCESSMESSAGE,
+          `The job "${title}" from ${company} has been successfully saved.`
+        )
         sendResponse({
           message: SUCCESSMESSAGE,
-          content: `The job "${title}" from ${company} has been successfully saved.`,
+          content: '',
         })
       })
       .catch((error) => {
+        sendNotification(FAILUREMESSAGE, error.message)
         sendResponse({ message: FAILUREMESSAGE, content: error.message })
       })
     return true
@@ -86,7 +99,7 @@ const saveJob = async (data) => {
 
 const formatDataToJSON = async (jobDescription) => {
   try {
-    const GROQAPIKEY = getStorageValue('groqAPIKey')
+    const GROQAPIKEY = await getStorageValue('groqAPIKey')
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {

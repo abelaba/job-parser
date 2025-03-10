@@ -28,6 +28,8 @@ window.onclick = function (event) {
 }
 
 document.getElementById('saveJobButton')?.addEventListener('click', async () => {
+  document.querySelector('.save-icon-loading').classList.remove('hidden')
+  document.querySelector('.save-icon').classList.add('hidden')
   const button = document.getElementById('saveJobButton')
   button.disabled = true
 
@@ -54,8 +56,11 @@ document.getElementById('saveJobButton')?.addEventListener('click', async () => 
           saveJob(url, jobText)
         } else {
           alert('Problem parsing content')
-          console.error('Problem parsing content')
+          document.querySelector('.save-icon-loading').classList.add('hidden')
+          document.querySelector('.save-icon').classList.remove('hidden')
+          const button = document.getElementById('saveJobButton')
           button.disabled = false
+          console.error('Problem parsing content')
         }
       }
     )
@@ -73,6 +78,8 @@ function saveJob(url, text) {
     },
     /* eslint-disable-next-line */
     (_) => {
+      document.querySelector('.save-icon-loading').classList.add('hidden')
+      document.querySelector('.save-icon').classList.remove('hidden')
       const button = document.getElementById('saveJobButton')
       button.disabled = false
     }
@@ -221,6 +228,15 @@ document.querySelector('.settings-button').addEventListener('click', () => {
   })
 })
 
+const sendNotification = (title, message) => {
+  chrome.notifications.create({
+    type: 'basic',
+    iconUrl: '../images/icon.png',
+    title: title,
+    message: message,
+  })
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   getSavedJobs()
   getStats()
@@ -261,7 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
         notionDatabaseID: notionDatabaseID,
       },
       () => {
-        console.log('Settings saved!')
+        sendNotification('Settings Saved', 'Keys Updated')
       }
     )
   })

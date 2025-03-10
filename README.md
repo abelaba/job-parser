@@ -67,3 +67,4 @@ The extension requires the following permissions:
 
 - `activeTab`: To access and parse job postings on the current webpage  
 - `storage`: To store user-provided keys and settings securely
+- `notification`: To send notification for success and failure events

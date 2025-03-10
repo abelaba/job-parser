@@ -7,7 +7,6 @@
     --font-sans:
       ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
       'Segoe UI Symbol', 'Noto Color Emoji';
-    --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
     --font-mono:
       ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
       monospace;
@@ -32,8 +31,6 @@
     --text-xs--line-height: calc(1 / 0.75);
     --text-sm: 0.875rem;
     --text-sm--line-height: calc(1.25 / 0.875);
-    --text-base: 1rem;
-    --text-base--line-height: calc(1.5 / 1);
     --text-lg: 1.125rem;
     --text-lg--line-height: calc(1.75 / 1.125);
     --text-xl: 1.25rem;
@@ -42,13 +39,12 @@
     --text-2xl--line-height: calc(2 / 1.5);
     --text-3xl: 1.875rem;
     --text-3xl--line-height: calc(2.25 / 1.875);
-    --font-weight-extralight: 200;
-    --font-weight-light: 300;
     --font-weight-medium: 500;
     --font-weight-bold: 700;
     --radius-lg: 0.5rem;
     --radius-xl: 0.75rem;
     --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --animate-spin: spin 1s linear infinite;
     --default-transition-duration: 150ms;
     --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     --default-font-family: var(--font-sans);
@@ -282,9 +278,6 @@
   .inset-0 {
     inset: calc(var(--spacing) * 0);
   }
-  .top-1 {
-    top: calc(var(--spacing) * 1);
-  }
   .top-1\/2 {
     top: calc(1 / 2 * 100%);
   }
@@ -360,9 +353,6 @@
   .w-10 {
     width: calc(var(--spacing) * 10);
   }
-  .w-11 {
-    width: calc(var(--spacing) * 11);
-  }
   .w-11\/12 {
     width: calc(11 / 12 * 100%);
   }
@@ -375,22 +365,15 @@
   .max-w-sm {
     max-width: var(--container-sm);
   }
-  .flex-shrink {
-    flex-shrink: 1;
-  }
   .shrink-0 {
     flex-shrink: 0;
-  }
-  .border-collapse {
-    border-collapse: collapse;
-  }
-  .-translate-y-1 {
-    --tw-translate-y: calc(var(--spacing) * -1);
-    translate: var(--tw-translate-x) var(--tw-translate-y);
   }
   .-translate-y-1\/2 {
     --tw-translate-y: calc(calc(1 / 2 * 100%) * -1);
     translate: var(--tw-translate-x) var(--tw-translate-y);
+  }
+  .animate-spin {
+    animation: var(--animate-spin);
   }
   .cursor-pointer {
     cursor: pointer;
@@ -398,17 +381,11 @@
   .resize {
     resize: both;
   }
-  .grid-rows-2 {
-    grid-template-rows: repeat(2, minmax(0, 1fr));
-  }
   .flex-col {
     flex-direction: column;
   }
   .flex-row {
     flex-direction: row;
-  }
-  .items-baseline {
-    align-items: baseline;
   }
   .items-center {
     align-items: center;
@@ -425,17 +402,8 @@
   .justify-start {
     justify-content: flex-start;
   }
-  .gap-0 {
-    gap: calc(var(--spacing) * 0);
-  }
-  .gap-0\.5 {
-    gap: calc(var(--spacing) * 0.5);
-  }
   .gap-1 {
     gap: calc(var(--spacing) * 1);
-  }
-  .gap-2 {
-    gap: calc(var(--spacing) * 2);
   }
   .divide-y {
     :where(& > :not(:last-child)) {
@@ -555,9 +523,6 @@
   .text-start {
     text-align: start;
   }
-  .font-serif {
-    font-family: var(--font-serif);
-  }
   .text-2xl {
     font-size: var(--text-2xl);
     line-height: var(--tw-leading, var(--text-2xl--line-height));
@@ -585,14 +550,6 @@
   .font-bold {
     --tw-font-weight: var(--font-weight-bold);
     font-weight: var(--font-weight-bold);
-  }
-  .font-extralight {
-    --tw-font-weight: var(--font-weight-extralight);
-    font-weight: var(--font-weight-extralight);
-  }
-  .font-light {
-    --tw-font-weight: var(--font-weight-light);
-    font-weight: var(--font-weight-light);
   }
   .font-medium {
     --tw-font-weight: var(--font-weight-medium);
@@ -625,11 +582,14 @@
   .italic {
     font-style: italic;
   }
-  .underline {
-    text-decoration-line: underline;
-  }
   .opacity-0 {
     opacity: 0%;
+  }
+  .opacity-25 {
+    opacity: 25%;
+  }
+  .opacity-75 {
+    opacity: 75%;
   }
   .shadow-lg {
     --tw-shadow:
@@ -644,10 +604,6 @@
     box-shadow:
       var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow),
       var(--tw-ring-shadow), var(--tw-shadow);
-  }
-  .outline {
-    outline-style: var(--tw-outline-style);
-    outline-width: 1px;
   }
   .filter {
     filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,)
@@ -919,11 +875,6 @@ body::-webkit-scrollbar {
   inherits: false;
   initial-value: 0 0 #0000;
 }
-@property --tw-outline-style {
-  syntax: '*';
-  inherits: false;
-  initial-value: solid;
-}
 @property --tw-blur {
   syntax: '*';
   inherits: false;
@@ -985,6 +936,11 @@ body::-webkit-scrollbar {
   syntax: '*';
   inherits: false;
 }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 @layer properties {
   @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or
     ((-moz-orient: inline) and (not (color: rgb(from red r g b)))) {
@@ -1012,7 +968,6 @@ body::-webkit-scrollbar {
       --tw-ring-offset-width: 0px;
       --tw-ring-offset-color: #fff;
       --tw-ring-offset-shadow: 0 0 #0000;
-      --tw-outline-style: solid;
       --tw-blur: initial;
       --tw-brightness: initial;
       --tw-contrast: initial;
