@@ -7,7 +7,7 @@ export default defineConfig([
     ignores: ['dist/libs', 'node_modules/**'],
   },
   { files: ['**/*.{js,mjs,cjs}'] },
-  { files: ['**/*.js'], languageOptions: { sourceType: 'script' } },
+  { files: ['**/*.js'], languageOptions: { sourceType: 'module' } },
   {
     files: ['**/*.{js,mjs,cjs}'],
     languageOptions: {

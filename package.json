@@ -2,8 +2,9 @@
   "name": "jobparser",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "scripts": {
-    "build:css": "npx @tailwindcss/cli -i ./src/styles.css -o ./dist/tailwind.css --watch",
+    "build:css": "npx @tailwindcss/cli -i ./src/styles.css -o ./dist/index.css --watch",
     "format": "prettier --write .",
     "lint:fix": "npx eslint . --fix",
     "lint": "npx eslint .",

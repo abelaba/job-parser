@@ -1,3 +1,5 @@
+import { sendNotification } from './utils.js'
+
 const modal = document.querySelector('.main-modal')
 const closeButton = document.querySelector('.modal-close')
 closeButton.onclick = () => modalClose()
@@ -227,15 +229,6 @@ document.querySelector('.settings-button').addEventListener('click', () => {
     )
   })
 })
-
-const sendNotification = (title, message) => {
-  chrome.notifications.create({
-    type: 'basic',
-    iconUrl: '../images/icon.png',
-    title: title,
-    message: message,
-  })
-}
 
 document.addEventListener('DOMContentLoaded', () => {
   getSavedJobs()

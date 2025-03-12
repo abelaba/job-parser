@@ -1,95 +1,6 @@
-async function getStorageValue(key) {
-  const result = await new Promise((resolve) => {
-    chrome.storage.local.get([key], (res) => {
-      resolve(res[key])
-    })
-  })
-  return result
-}
+import { getStorageValue } from './utils.js'
 
-const sendNotification = (title, message) => {
-  chrome.notifications.create({
-    type: 'basic',
-    iconUrl: '../images/icon.png',
-    title: title,
-    message: message,
-  })
-}
-
-chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
-  const [SUCCESSMESSAGE, FAILUREMESSAGE] = ['SUCCESS', 'FAILURE']
-
-  if (request.action === 'SAVEJOB') {
-    saveJob(request.data)
-      .then((data) => {
-        const title = data.properties.Link.title[0].plain_text
-        const company = data.properties.Company.select.name
-        sendNotification(
-          SUCCESSMESSAGE,
-          `The job "${title}" from ${company} has been successfully saved.`
-        )
-        sendResponse({
-          message: SUCCESSMESSAGE,
-          content: '',
-        })
-      })
-      .catch((error) => {
-        sendNotification(FAILUREMESSAGE, error.message)
-        sendResponse({ message: FAILUREMESSAGE, content: error.message })
-      })
-    return true
-  } else if (request.action === 'GETSAVEDJOBS') {
-    getRecentlySavedJobs()
-      .then((data) => {
-        sendResponse({
-          message: SUCCESSMESSAGE,
-          content: data,
-        })
-      })
-      .catch((error) => {
-        sendResponse({
-          message: FAILUREMESSAGE,
-          error: error,
-        })
-      })
-
-    return true
-  } else if (request.action === 'GETSTATS') {
-    getStats()
-      .then((data) => {
-        sendResponse({
-          message: SUCCESSMESSAGE,
-          content: data,
-        })
-      })
-      .catch((error) => {
-        sendResponse({
-          message: FAILUREMESSAGE,
-          error: error,
-        })
-      })
-
-    return true
-  } else if (request.action === 'GETSTREAK') {
-    getStreak()
-      .then((data) => {
-        sendResponse({
-          message: SUCCESSMESSAGE,
-          content: data,
-        })
-      })
-      .catch((error) => {
-        sendResponse({
-          message: FAILUREMESSAGE,
-          error: error,
-        })
-      })
-
-    return true
-  }
-})
-
-const saveJob = async (data) => {
+export const saveJob = async (data) => {
   await checkIfJobPostingExists(data.url)
 
   const parsedJSON = await formatDataToJSON(data.jobDescription)
@@ -97,7 +8,7 @@ const saveJob = async (data) => {
   return await saveJobPosting(parsedJSON)
 }
 
-const formatDataToJSON = async (jobDescription) => {
+export const formatDataToJSON = async (jobDescription) => {
   try {
     const GROQAPIKEY = await getStorageValue('groqAPIKey')
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -143,7 +54,7 @@ Respond only with the JSON object, without any additional text or explanation.
   }
 }
 
-const checkIfJobPostingExists = async (url) => {
+export const checkIfJobPostingExists = async (url) => {
   try {
     const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
     const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
@@ -171,12 +82,11 @@ const checkIfJobPostingExists = async (url) => {
     }
   } catch (error) {
     console.error('checkIfURLExistsInNotion: ', error)
-
     throw error
   }
 }
 
-const saveJobPosting = async (data) => {
+export const saveJobPosting = async (data) => {
   try {
     const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
     const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
@@ -238,7 +148,6 @@ const saveJobPosting = async (data) => {
     })
 
     const responseData = await response.json()
-    console.log(responseData)
     return responseData
   } catch (error) {
     console.error('notionAPIRequest: ', error)
@@ -246,7 +155,7 @@ const saveJobPosting = async (data) => {
   }
 }
 
-const getRecentlySavedJobs = async () => {
+export const getRecentlySavedJobs = async () => {
   try {
     const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
     const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
@@ -293,7 +202,7 @@ const getRecentlySavedJobs = async () => {
   }
 }
 
-const getStats = async () => {
+export const getStats = async () => {
   try {
     const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
     const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
@@ -332,7 +241,7 @@ const getStats = async () => {
   }
 }
 
-const getStreak = async () => {
+export const getStreak = async () => {
   try {
     const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
     const NOTIONAPIKEY = await getStorageValue('notionAPIKey')

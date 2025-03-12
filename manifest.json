@@ -10,7 +10,8 @@
   "permissions": ["activeTab", "scripting", "storage", "notifications"],
   "host_permissions": ["<all_urls>"],
   "background": {
-    "service_worker": "dist/background.js"
+    "service_worker": "dist/scripts/background.js",
+    "type": "module"
   },
   "web_accessible_resources": [
     {
