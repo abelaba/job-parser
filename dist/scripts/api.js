@@ -49,7 +49,7 @@ Respond only with the JSON object, without any additional text or explanation.
     const parsedJSON = JSON.parse(message)
     return parsedJSON
   } catch (error) {
-    console.log('groqAPIRequest:', error)
+    console.error('groqAPIRequest:', error)
     throw error
   }
 }

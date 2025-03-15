@@ -13,7 +13,9 @@ export default defineConfig([
     languageOptions: {
       globals: {
         ...globals.browser,
+        ...globals.jest,
         chrome: 'readonly',
+        global: 'readonly',
       },
     },
   },
