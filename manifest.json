@@ -18,5 +18,11 @@
       "resources": ["dist/libs"],
       "matches": ["<all_urls>"]
     }
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["dist/scripts/content.js"]
+    }
   ]
 }

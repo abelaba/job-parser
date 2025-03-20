@@ -185,6 +185,7 @@ export const getRecentlySavedJobs = async () => {
     const data = await response.json()
 
     return data.results.map((content) => {
+      const { id } = content
       var { link, Company, Country, Link, Description, URL } = content.properties
 
       return {
@@ -194,6 +195,7 @@ export const getRecentlySavedJobs = async () => {
         url: URL.url,
         title: Link.title[0].plain_text,
         description: Description.rich_text[0].plain_text,
+        id: id,
       }
     })
   } catch (error) {
@@ -303,7 +305,7 @@ export const getStreak = async () => {
 
       const diffDays = Math.floor((currentDate - streakDate) / (1000 * 60 * 60 * 24))
 
-      if (diffDays === 0) {
+      if (i == 0 && diffDays === 0) {
         realCurrentStreak++
       } else if (i !== 0 && diffDays === 1) {
         realCurrentStreak++
@@ -317,7 +319,43 @@ export const getStreak = async () => {
     return {
       maxStreak: maxStreak,
       currentStreak: realCurrentStreak,
-      lastAppliedDate: dates[0],
+      lastAppliedDate: parsed[0].toLocaleDateString(),
+    }
+  } catch (error) {
+    console.error('Error fetching data from Notion:', error)
+    throw error
+  }
+}
+
+export const updateJob = async (pageId) => {
+  try {
+    const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
+    const url = `https://api.notion.com/v1/pages/${pageId}`
+    const today = new Date()
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${NOTIONAPIKEY}`,
+        'Content-Type': 'application/json',
+        'Notion-Version': '2022-06-28',
+      },
+      body: JSON.stringify({
+        properties: {
+          Status: {
+            status: {
+              name: 'Applied',
+            },
+          },
+          'Applied Date': {
+            date: {
+              start: today.toISOString(),
+            },
+          },
+        },
+      }),
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to update data: ${response.statusText}`)
     }
   } catch (error) {
     console.error('Error fetching data from Notion:', error)

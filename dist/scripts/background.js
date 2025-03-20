@@ -1,4 +1,4 @@
-import { saveJob, getRecentlySavedJobs, getStats, getStreak } from './api.js'
+import { saveJob, getRecentlySavedJobs, getStats, getStreak, updateJob } from './api.js'
 import { sendNotification } from './utils.js'
 
 chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
@@ -61,6 +61,22 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
         sendResponse({
           message: SUCCESSMESSAGE,
           content: data,
+        })
+      })
+      .catch((error) => {
+        sendResponse({
+          message: FAILUREMESSAGE,
+          error: error,
+        })
+      })
+
+    return true
+  } else if (request.action === 'UPDATEJOB') {
+    updateJob(request.pageId)
+      .then(() => {
+        sendResponse({
+          message: SUCCESSMESSAGE,
+          content: '',
         })
       })
       .catch((error) => {

@@ -98,14 +98,20 @@ const getSavedJobs = () => {
         var table = document.querySelector('.recently-saved-jobs')
         response.content.forEach((data) => {
           const row = document.createElement('tr')
-          row.className = 'hover:bg-slate-100 cursor-pointer odd:bg-white even:bg-slate-50'
+          row.className = 'hover:bg-slate-100 odd:bg-white even:bg-slate-50'
           row.innerHTML = `
 		<td class="px-4 py-2">${data.title}</td>
 		<td class="px-4 py-2">${data.company}</td>
 		<td class="px-4 py-2">${data.country}</td>
+		<td class="px-4 py-2">
+		    <button style="transition:all .15s ease" class="open-button cursor-pointer outline-none mr-1 mb-1 border border-solid border-blue-500 rounded px-4 py-2 bg-transparent text-xs text-blue-500 font-bold uppercase focus:outline-none active:bg-blue-600 hover:bg-blue-600 hover:text-white">Open</button>
+		</td>
+		<td class="px-4 py-2">
+		    <button style="transition:all .15s ease" class="apply-btn cursor-pointer outline-none mr-1 mb-1 border border-solid border-green-500 rounded px-4 py-2 bg-transparent text-xs text-green-500 font-bold uppercase focus:outline-none active:bg-green-600 hover:bg-green-600 hover:text-white" data-id="${data.id}">Applied</button>
+		</td>
 	    `
-
-          row.addEventListener('click', () => {
+          row.querySelector('.apply-btn').addEventListener('click', () => updateJob(data.id))
+          row.querySelector('.open-button').addEventListener('click', () => {
             openModal('Job Qualification', `<p> ${data.description} </p>`)
             document.querySelector('.apply-button').classList.remove('hidden')
             document.querySelector('.apply-button').href = data.url
@@ -180,6 +186,27 @@ const getStreak = () => {
           document.querySelector('.flame-no-color').classList.add('hidden')
         }
         document.querySelector('#lastAppliedDate').textContent = lastAppliedDate
+      }
+    }
+  )
+}
+
+const updateJob = (pageId) => {
+  chrome.runtime.sendMessage(
+    {
+      action: 'UPDATEJOB',
+      pageId: pageId,
+    },
+    (response) => {
+      if (response.message === 'SUCCESS') {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              action: 'SHOWDIALOG',
+            })
+            window.close()
+          }
+        })
       }
     }
   )

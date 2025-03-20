@@ -16,6 +16,7 @@ const {
   getStats,
   getStreak,
   getRecentlySavedJobs,
+  updateJob,
 } = await import('../dist/scripts/api')
 
 describe('formatDataToJSON', () => {
@@ -329,7 +330,7 @@ describe('getStreak', () => {
     expect(result).toEqual({
       maxStreak: 3,
       currentStreak: 3,
-      lastAppliedDate: today.toISOString(),
+      lastAppliedDate: today.toLocaleDateString(),
     })
   })
 
@@ -361,5 +362,66 @@ describe('getStreak', () => {
     })
 
     await expect(getStreak()).rejects.toThrow('Failed to fetch data: Server Error')
+  })
+})
+
+describe('updateJob', () => {
+  it('should make a PATCH request to update the job status and applied date', async () => {
+    const fakeApiKey = 'fake-api-key'
+    const fakePageId = 'page-id-123'
+
+    getStorageValue.mockResolvedValueOnce(fakeApiKey)
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+    })
+
+    await updateJob(fakePageId)
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    expect(fetch).toHaveBeenCalledWith(`https://api.notion.com/v1/pages/${fakePageId}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${fakeApiKey}`,
+        'Content-Type': 'application/json',
+        'Notion-Version': '2022-06-28',
+      },
+      body: JSON.stringify({
+        properties: {
+          Status: {
+            status: {
+              name: 'Applied',
+            },
+          },
+          'Applied Date': {
+            date: {
+              start: today.toISOString(),
+            },
+          },
+        },
+      }),
+    })
+  })
+
+  it('should throw an error if fetch response is not ok', async () => {
+    const fakeApiKey = 'fake-api-key'
+    const fakePageId = 'page-id-123'
+
+    getStorageValue.mockResolvedValueOnce(fakeApiKey)
+
+    fetch.mockResolvedValueOnce({
+      ok: false,
+      statusText: 'Bad Request',
+    })
+
+    await expect(updateJob(fakePageId)).rejects.toThrow('Failed to update data: Bad Request')
+  })
+
+  it('should throw an error if getStorageValue fails', async () => {
+    getStorageValue.mockRejectedValueOnce(new Error('Storage fetch failed'))
+
+    await expect(updateJob('page-id-123')).rejects.toThrow('Storage fetch failed')
   })
 })

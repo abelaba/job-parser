@@ -10,7 +10,7 @@ export async function getStorageValue(key) {
 export const sendNotification = (title, message) => {
   chrome.notifications.create({
     type: 'basic',
-    iconUrl: '../images/icon.png',
+    iconUrl: '../..//images/icon.png',
     title: title,
     message: message,
   })
