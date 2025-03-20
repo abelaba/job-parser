@@ -1,5 +1,5 @@
 import { saveJob, getRecentlySavedJobs, getStats, getStreak, updateJob } from './api.js'
-import { sendNotification } from './utils.js'
+import { sendNotification } from '../utils/utils.js'
 
 chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
   const [SUCCESSMESSAGE, FAILUREMESSAGE] = ['SUCCESS', 'FAILURE']

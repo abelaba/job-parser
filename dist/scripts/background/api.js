@@ -1,4 +1,4 @@
-import { getStorageValue } from './utils.js'
+import { getStorageValue } from '../utils/utils.js'
 
 export const saveJob = async (data) => {
   await checkIfJobPostingExists(data.url)

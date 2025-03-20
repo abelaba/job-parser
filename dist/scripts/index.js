@@ -1,4 +1,4 @@
-import { sendNotification } from './utils.js'
+import { sendNotification } from './utils/utils.js'
 
 const modal = document.querySelector('.main-modal')
 const closeButton = document.querySelector('.modal-close')

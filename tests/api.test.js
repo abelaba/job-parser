@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals'
 
-jest.unstable_mockModule('../dist/scripts/utils', () => ({
+jest.unstable_mockModule('../dist/scripts/utils/utils', () => ({
   getStorageValue: jest.fn(),
 }))
 
@@ -8,7 +8,7 @@ global.console = {
   error: jest.fn(),
 }
 
-const { getStorageValue } = await import('../dist/scripts/utils')
+const { getStorageValue } = await import('../dist/scripts/utils/utils')
 const {
   formatDataToJSON,
   checkIfJobPostingExists,
@@ -17,7 +17,7 @@ const {
   getStreak,
   getRecentlySavedJobs,
   updateJob,
-} = await import('../dist/scripts/api')
+} = await import('../dist/scripts/background/api')
 
 describe('formatDataToJSON', () => {
   const mockAPIKey = 'fake-api-key'
@@ -379,7 +379,6 @@ describe('updateJob', () => {
     await updateJob(fakePageId)
 
     const today = new Date()
-    today.setHours(0, 0, 0, 0)
 
     expect(fetch).toHaveBeenCalledWith(`https://api.notion.com/v1/pages/${fakePageId}`, {
       method: 'PATCH',
