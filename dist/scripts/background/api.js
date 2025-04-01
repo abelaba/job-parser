@@ -1,5 +1,7 @@
 import { getStorageValue } from '../utils/utils.js'
 
+const notionBaseURL = 'https://api.notion.com/v1'
+
 export const saveJob = async (data) => {
   await checkIfJobPostingExists(data.url)
 
@@ -58,7 +60,7 @@ export const checkIfJobPostingExists = async (url) => {
   try {
     const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
     const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
-    const response = await fetch(`https://api.notion.com/v1/databases/${NOTIONDATABASEID}/query`, {
+    const response = await fetch(`${notionBaseURL}/databases/${NOTIONDATABASEID}/query`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -91,7 +93,7 @@ export const saveJobPosting = async (data) => {
     const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
     const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
 
-    const response = await fetch('https://api.notion.com/v1/pages', {
+    const response = await fetch(`${notionBaseURL}/pages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -159,7 +161,7 @@ export const getRecentlySavedJobs = async () => {
   try {
     const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
     const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
-    const url = `https://api.notion.com/v1/databases/${NOTIONDATABASEID}/query`
+    const url = `${notionBaseURL}/databases/${NOTIONDATABASEID}/query`
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -209,7 +211,7 @@ export const getStats = async () => {
     const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
     const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
 
-    const url = `https://api.notion.com/v1/databases/${NOTIONDATABASEID}/query`
+    const url = `${notionBaseURL}/databases/${NOTIONDATABASEID}/query`
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -247,7 +249,7 @@ export const getStreak = async () => {
   try {
     const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
     const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
-    const url = `https://api.notion.com/v1/databases/${NOTIONDATABASEID}/query`
+    const url = `${notionBaseURL}/databases/${NOTIONDATABASEID}/query`
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -330,7 +332,7 @@ export const getStreak = async () => {
 export const updateJob = async (pageId) => {
   try {
     const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
-    const url = `https://api.notion.com/v1/pages/${pageId}`
+    const url = `${notionBaseURL}/pages/${pageId}`
     const today = new Date()
     const response = await fetch(url, {
       method: 'PATCH',

@@ -1,10 +1,9 @@
 import { saveJob, getRecentlySavedJobs, getStats, getStreak, updateJob } from './api.js'
 import { sendNotification } from '../utils/utils.js'
+import { SUCCESSMESSAGE, FAILUREMESSAGE, REQUESTACTION } from '../utils/constants.js'
 
 chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
-  const [SUCCESSMESSAGE, FAILUREMESSAGE] = ['SUCCESS', 'FAILURE']
-
-  if (request.action === 'SAVEJOB') {
+  if (request.action === REQUESTACTION.SAVEJOB) {
     saveJob(request.data)
       .then((data) => {
         const title = data.properties.Link.title[0].plain_text
@@ -23,7 +22,7 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
         sendResponse({ message: FAILUREMESSAGE, content: error.message })
       })
     return true
-  } else if (request.action === 'GETSAVEDJOBS') {
+  } else if (request.action === REQUESTACTION.GETSAVEDJOBS) {
     getRecentlySavedJobs()
       .then((data) => {
         sendResponse({
@@ -39,7 +38,7 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
       })
 
     return true
-  } else if (request.action === 'GETSTATS') {
+  } else if (request.action === REQUESTACTION.GETSTATS) {
     getStats()
       .then((data) => {
         sendResponse({
@@ -55,7 +54,7 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
       })
 
     return true
-  } else if (request.action === 'GETSTREAK') {
+  } else if (request.action === REQUESTACTION.GETSTREAK) {
     getStreak()
       .then((data) => {
         sendResponse({
@@ -71,7 +70,7 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
       })
 
     return true
-  } else if (request.action === 'UPDATEJOB') {
+  } else if (request.action === REQUESTACTION.UPDATEJOB) {
     updateJob(request.pageId)
       .then(() => {
         sendResponse({

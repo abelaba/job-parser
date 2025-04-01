@@ -1,3 +1,4 @@
+import { REQUESTACTION, SUCCESSMESSAGE } from './utils/constants.js'
 import { sendNotification } from './utils/utils.js'
 
 const modal = document.querySelector('.main-modal')
@@ -72,14 +73,13 @@ document.getElementById('saveJobButton')?.addEventListener('click', async () => 
 function saveJob(url, text) {
   chrome.runtime.sendMessage(
     {
-      action: 'SAVEJOB',
+      action: REQUESTACTION.SAVEJOB,
       data: {
         jobDescription: text,
         url: url,
       },
     },
-    /* eslint-disable-next-line */
-    (_) => {
+    () => {
       document.querySelector('.save-icon-loading').classList.add('hidden')
       document.querySelector('.save-icon').classList.remove('hidden')
       const button = document.getElementById('saveJobButton')
@@ -91,10 +91,10 @@ function saveJob(url, text) {
 const getSavedJobs = () => {
   chrome.runtime.sendMessage(
     {
-      action: 'GETSAVEDJOBS',
+      action: REQUESTACTION.GETSAVEDJOBS,
     },
     (response) => {
-      if (response.message === 'SUCCESS') {
+      if (response.message === SUCCESSMESSAGE) {
         var table = document.querySelector('.recently-saved-jobs')
         response.content.forEach((data) => {
           const row = document.createElement('tr')
@@ -127,10 +127,10 @@ const getSavedJobs = () => {
 const getStats = () => {
   chrome.runtime.sendMessage(
     {
-      action: 'GETSTATS',
+      action: REQUESTACTION.GETSTATS,
     },
     (response) => {
-      if (response.message === 'SUCCESS') {
+      if (response.message === SUCCESSMESSAGE) {
         var ctx = document.getElementById('myChart').getContext('2d')
         const labels = Object.keys(response.content)
         const values = Object.values(response.content)
@@ -172,10 +172,10 @@ const getStats = () => {
 const getStreak = () => {
   chrome.runtime.sendMessage(
     {
-      action: 'GETSTREAK',
+      action: REQUESTACTION.GETSTREAK,
     },
     (response) => {
-      if (response.message === 'SUCCESS') {
+      if (response.message === SUCCESSMESSAGE) {
         const { lastAppliedDate, currentStreak } = response.content
         document.querySelector('#streakCount').innerHTML = currentStreak
         if (currentStreak === 0) {
@@ -194,11 +194,11 @@ const getStreak = () => {
 const updateJob = (pageId) => {
   chrome.runtime.sendMessage(
     {
-      action: 'UPDATEJOB',
+      action: REQUESTACTION.UPDATEJOB,
       pageId: pageId,
     },
     (response) => {
-      if (response.message === 'SUCCESS') {
+      if (response.message === SUCCESSMESSAGE) {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           if (tabs[0]) {
             chrome.tabs.sendMessage(tabs[0].id, {
