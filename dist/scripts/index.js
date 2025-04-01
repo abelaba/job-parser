@@ -149,7 +149,7 @@ const getStats = () => {
         ]
         /* eslint-disable-next-line */
         new Chart(ctx, {
-          type: 'pie',
+          type: 'bar',
           data: {
             labels: labels,
             datasets: [
@@ -161,7 +161,8 @@ const getStats = () => {
             ],
           },
           options: {
-            responsive: false,
+            responsive: true,
+            maintainAspectRation: true,
           },
         })
       }
