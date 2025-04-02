@@ -6,11 +6,9 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
   if (request.action === REQUESTACTION.SAVEJOB) {
     saveJob(request.data)
       .then((data) => {
-        const title = data.properties.Link.title[0].plain_text
-        const company = data.properties.Company.select.name
         sendNotification(
           SUCCESSMESSAGE,
-          `The job "${title}" from ${company} has been successfully saved.`
+          `The job "${data.title}" from ${data.company} has been successfully saved.`
         )
         sendResponse({
           message: SUCCESSMESSAGE,
@@ -79,6 +77,7 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
         })
       })
       .catch((error) => {
+        sendNotification(FAILUREMESSAGE, error.message)
         sendResponse({
           message: FAILUREMESSAGE,
           error: error,

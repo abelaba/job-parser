@@ -71,12 +71,14 @@ document.getElementById('saveJobButton')?.addEventListener('click', async () => 
 })
 
 function saveJob(url, text) {
+  const urlObject = new URL(url)
+  const baseUrl = urlObject.origin + urlObject.pathname
   chrome.runtime.sendMessage(
     {
       action: REQUESTACTION.SAVEJOB,
       data: {
         jobDescription: text,
-        url: url,
+        url: baseUrl,
       },
     },
     () => {
@@ -203,7 +205,7 @@ const updateJob = (pageId) => {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           if (tabs[0]) {
             chrome.tabs.sendMessage(tabs[0].id, {
-              action: 'SHOWDIALOG',
+              action: REQUESTACTION.SHOWDIALOG,
             })
             window.close()
           }
@@ -222,6 +224,7 @@ document.querySelector('.settings-button').addEventListener('click', () => {
 	<div class="mb-4">
 	<label for="groq-api-key" class="block text-sm font-medium text-gray-700">Groq API Key</label>
 	<input
+	type="password"
     id="groq-api-key"
     type="text"
     class="mt-1 p-2 w-full border border-gray-300 rounded-lg"
@@ -234,6 +237,7 @@ document.querySelector('.settings-button').addEventListener('click', () => {
 	<div class="mb-4">
 	<label for="notion-database-id" class="block text-sm font-medium text-gray-700">Notion Database ID</label>
 	<input
+	type="password"
     id="notion-database-id"
     type="text"
     class="mt-1 p-2 w-full border border-gray-300 rounded-lg"
@@ -246,6 +250,7 @@ document.querySelector('.settings-button').addEventListener('click', () => {
 	<div class="mb-4">
 	<label for="notion-api-key" class="block text-sm font-medium text-gray-700">Notion API Key</label>
 	<input
+	type="password"
     id="notion-api-key"
     type="text"
     class="mt-1 p-2 w-full border border-gray-300 rounded-lg"

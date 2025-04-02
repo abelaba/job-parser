@@ -1,13 +1,36 @@
 import { getStorageValue } from '../utils/utils.js'
 
-const notionBaseURL = 'https://api.notion.com/v1'
+const notionFetchWrapper = async ({ url, method, body = null }) => {
+  const notionBaseURL = 'https://api.notion.com/v1'
+  const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
+  const response = await fetch(notionBaseURL + url, {
+    method: method,
+    headers: {
+      Authorization: `Bearer ${NOTIONAPIKEY}`,
+      'Content-Type': 'application/json',
+      'Notion-Version': '2022-06-28',
+    },
+    body: body ? JSON.stringify(body) : null,
+  })
+
+  if (!response.ok) {
+    const errorResponse = await response.json()
+    throw new Error(errorResponse.message)
+  }
+  return await response.json()
+}
 
 export const saveJob = async (data) => {
   await checkIfJobPostingExists(data.url)
 
   const parsedJSON = await formatDataToJSON(data.jobDescription)
   parsedJSON['url'] = data.url
-  return await saveJobPosting(parsedJSON)
+  const savedJob = await saveJobPosting(parsedJSON)
+
+  return {
+    title: savedJob.properties.Link.title[0].plain_text,
+    company: savedJob.properties.Company.select.name,
+  }
 }
 
 export const formatDataToJSON = async (jobDescription) => {
@@ -24,10 +47,15 @@ export const formatDataToJSON = async (jobDescription) => {
           {
             role: 'system',
             content: `
-	      Provide the job title and the country from the job description as a JSON object in the following format:
-{ "jobTitle": "<job-title>", "country": "<country>",  "company": "<company>", "description": <a short description of minimum qualifications and required qualifications as text with bullet points> }
-
-Respond only with the JSON object, without any additional text or explanation.
+		Provide the job title and the country from the job description as a JSON object in the following format:
+		    { 	
+			"jobTitle": "<job-title>", 
+			"country": "<country>",  
+			"company": "<company>", 
+			"description": <a short description of minimum qualifications and required qualifications as a string with bullet points> 
+		    }
+		
+		Respond only with the JSON object, without any additional text or explanation.
 	      `,
           },
           {
@@ -59,28 +87,23 @@ Respond only with the JSON object, without any additional text or explanation.
 export const checkIfJobPostingExists = async (url) => {
   try {
     const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
-    const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
-    const response = await fetch(`${notionBaseURL}/databases/${NOTIONDATABASEID}/query`, {
+    const responseData = await notionFetchWrapper({
+      url: `/databases/${NOTIONDATABASEID}/query`,
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${NOTIONAPIKEY}`,
-        'Notion-Version': '2022-06-28',
-      },
-      body: JSON.stringify({
+      body: {
         filter: {
           property: 'URL',
           url: {
             equals: url,
           },
         },
-      }),
+      },
     })
 
-    const responseData = await response.json()
     const exists = responseData.results && responseData.results.length > 0
     if (exists) {
-      throw new Error('URL already exists in the Notion database.')
+      const status = responseData.results[0].properties.Status.status.name
+      throw new Error(`You have already saved this job. Status=${status}`)
     }
   } catch (error) {
     console.error('checkIfURLExistsInNotion: ', error)
@@ -91,16 +114,10 @@ export const checkIfJobPostingExists = async (url) => {
 export const saveJobPosting = async (data) => {
   try {
     const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
-    const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
-
-    const response = await fetch(`${notionBaseURL}/pages`, {
+    const responseData = await notionFetchWrapper({
+      url: `/pages`,
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${NOTIONAPIKEY}`,
-        'Notion-Version': '2022-06-28',
-      },
-      body: JSON.stringify({
+      body: {
         parent: {
           database_id: NOTIONDATABASEID,
         },
@@ -146,10 +163,9 @@ export const saveJobPosting = async (data) => {
             ],
           },
         },
-      }),
+      },
     })
 
-    const responseData = await response.json()
     return responseData
   } catch (error) {
     console.error('notionAPIRequest: ', error)
@@ -160,31 +176,20 @@ export const saveJobPosting = async (data) => {
 export const getRecentlySavedJobs = async () => {
   try {
     const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
-    const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
-    const url = `${notionBaseURL}/databases/${NOTIONDATABASEID}/query`
-    const response = await fetch(url, {
+    const url = `/databases/${NOTIONDATABASEID}/query`
+
+    const data = await notionFetchWrapper({
+      url: url,
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${NOTIONAPIKEY}`,
-        'Content-Type': 'application/json',
-        'Notion-Version': '2022-06-28',
-      },
-      body: JSON.stringify({
-        // sorts: [{ property: "Created Date", direction: "ascending" }],
+      body: {
         filter: {
           property: 'Status',
           status: {
             equals: 'Not Applied',
           },
         },
-      }),
+      },
     })
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch data: ${response.statusText}`)
-    }
-
-    const data = await response.json()
 
     return data.results.map((content) => {
       const { id } = content
@@ -209,23 +214,8 @@ export const getRecentlySavedJobs = async () => {
 export const getStats = async () => {
   try {
     const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
-    const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
-
-    const url = `${notionBaseURL}/databases/${NOTIONDATABASEID}/query`
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${NOTIONAPIKEY}`,
-        'Content-Type': 'application/json',
-        'Notion-Version': '2022-06-28',
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch data: ${response.statusText}`)
-    }
-
-    const responseJSON = await response.json()
+    const url = `/databases/${NOTIONDATABASEID}/query`
+    const responseJSON = await notionFetchWrapper({ url: url, method: 'POST' })
 
     const count = {}
 
@@ -248,16 +238,11 @@ export const getStats = async () => {
 export const getStreak = async () => {
   try {
     const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
-    const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
-    const url = `${notionBaseURL}/databases/${NOTIONDATABASEID}/query`
-    const response = await fetch(url, {
+    const url = `/databases/${NOTIONDATABASEID}/query`
+    const responseJSON = await notionFetchWrapper({
+      url: url,
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${NOTIONAPIKEY}`,
-        'Content-Type': 'application/json',
-        'Notion-Version': '2022-06-28',
-      },
-      body: JSON.stringify({
+      body: {
         sorts: [{ property: 'Applied Date', direction: 'descending' }],
         filter: {
           property: 'Applied Date',
@@ -265,14 +250,9 @@ export const getStreak = async () => {
             is_not_empty: true,
           },
         },
-      }),
+      },
     })
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch data: ${response.statusText}`)
-    }
-
-    const responseJSON = await response.json()
     const dates = responseJSON.results.map((data) => data.properties['Applied Date'].date.start)
     if (dates.length === 0) {
       return { maxStreak: 0, currentStreak: 0, lastAppliedDate: '' }
@@ -331,17 +311,12 @@ export const getStreak = async () => {
 
 export const updateJob = async (pageId) => {
   try {
-    const NOTIONAPIKEY = await getStorageValue('notionAPIKey')
-    const url = `${notionBaseURL}/pages/${pageId}`
+    const url = `/pages/${pageId}`
     const today = new Date()
-    const response = await fetch(url, {
+    await notionFetchWrapper({
+      url: url,
       method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${NOTIONAPIKEY}`,
-        'Content-Type': 'application/json',
-        'Notion-Version': '2022-06-28',
-      },
-      body: JSON.stringify({
+      body: {
         properties: {
           Status: {
             status: {
@@ -354,11 +329,8 @@ export const updateJob = async (pageId) => {
             },
           },
         },
-      }),
+      },
     })
-    if (!response.ok) {
-      throw new Error(`Failed to update data: ${response.statusText}`)
-    }
   } catch (error) {
     console.error('Error fetching data from Notion:', error)
     throw error
