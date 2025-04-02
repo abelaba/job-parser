@@ -1,3 +1,4 @@
+import { RANGE } from '../utils/constants.js'
 import { getStorageValue } from '../utils/utils.js'
 
 const notionFetchWrapper = async ({ url, method, body = null }) => {
@@ -99,7 +100,6 @@ export const checkIfJobPostingExists = async (url) => {
         },
       },
     })
-
     const exists = responseData.results && responseData.results.length > 0
     if (exists) {
       const status = responseData.results[0].properties.Status.status.name
@@ -211,11 +211,23 @@ export const getRecentlySavedJobs = async () => {
   }
 }
 
-export const getStats = async () => {
+export const getStats = async (range) => {
   try {
     const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
     const url = `/databases/${NOTIONDATABASEID}/query`
-    const responseJSON = await notionFetchWrapper({ url: url, method: 'POST' })
+    let dateFilter = {}
+    if (range === RANGE.PASTYEAR) {
+      dateFilter = { past_year: {} }
+    } else if (range === RANGE.PASTMONTH) {
+      dateFilter = { past_month: {} }
+    } else if (range === RANGE.PASTWEEK) {
+      dateFilter = { past_week: {} }
+    }
+    const responseJSON = await notionFetchWrapper({
+      url: url,
+      method: 'POST',
+      body: { filter: { property: 'Created Date', date: dateFilter } },
+    })
 
     const count = {}
 

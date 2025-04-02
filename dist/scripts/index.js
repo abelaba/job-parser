@@ -1,4 +1,4 @@
-import { REQUESTACTION, SUCCESSMESSAGE } from './utils/constants.js'
+import { RANGE, REQUESTACTION, SUCCESSMESSAGE } from './utils/constants.js'
 import { sendNotification } from './utils/utils.js'
 
 const modal = document.querySelector('.main-modal')
@@ -30,47 +30,7 @@ window.onclick = function (event) {
   if (event.target == modal) modalClose()
 }
 
-document.getElementById('saveJobButton')?.addEventListener('click', async () => {
-  document.querySelector('.save-icon-loading').classList.remove('hidden')
-  document.querySelector('.save-icon').classList.add('hidden')
-  const button = document.getElementById('saveJobButton')
-  button.disabled = true
-
-  const [tab] = await chrome.tabs.query({
-    active: true,
-    currentWindow: true,
-  })
-
-  if (tab && tab.id) {
-    chrome.scripting.executeScript(
-      {
-        target: { tabId: tab.id },
-        func: () => {
-          const mainElement = document.querySelector('main')
-          const jobText = mainElement
-            ? mainElement.innerText.trim()
-            : document.body.innerText.trim()
-          return { url: document.URL, jobText: jobText }
-        },
-      },
-      (results) => {
-        if (results && results.length > 0) {
-          const { url, jobText } = results[0].result
-          saveJob(url, jobText)
-        } else {
-          alert('Problem parsing content')
-          document.querySelector('.save-icon-loading').classList.add('hidden')
-          document.querySelector('.save-icon').classList.remove('hidden')
-          const button = document.getElementById('saveJobButton')
-          button.disabled = false
-          console.error('Problem parsing content')
-        }
-      }
-    )
-  }
-})
-
-function saveJob(url, text) {
+const saveJob = (url, text) => {
   const urlObject = new URL(url)
   const baseUrl = urlObject.origin + urlObject.pathname
   chrome.runtime.sendMessage(
@@ -126,13 +86,20 @@ const getSavedJobs = () => {
   )
 }
 
-const getStats = () => {
+const getStats = (range = RANGE.PASTYEAR) => {
   chrome.runtime.sendMessage(
     {
       action: REQUESTACTION.GETSTATS,
+      body: {
+        range: range,
+      },
     },
     (response) => {
       if (response.message === SUCCESSMESSAGE) {
+        /* eslint-disable-next-line */
+        if (Chart.getChart('myChart')) {
+          Chart.getChart('myChart')?.destroy() /* eslint-disable-line */
+        }
         var ctx = document.getElementById('myChart').getContext('2d')
         const labels = Object.keys(response.content)
         const values = Object.values(response.content)
@@ -156,13 +123,18 @@ const getStats = () => {
             labels: labels,
             datasets: [
               {
-                label: 'Jobs',
+                label: range,
                 data: values,
                 backgroundColor: colors.slice(0, values.length),
               },
             ],
           },
           options: {
+            plugins: {
+              legend: {
+                display: false,
+              },
+            },
             responsive: true,
             maintainAspectRation: true,
           },
@@ -214,54 +186,6 @@ const updateJob = (pageId) => {
     }
   )
 }
-
-document.querySelector('.settings-button').addEventListener('click', () => {
-  document.querySelector('.settings-save-button').classList.remove('hidden')
-  chrome.storage.local.get(['groqAPIKey', 'notionAPIKey', 'notionDatabaseID'], (result) => {
-    openModal(
-      'Settings',
-      `
-	<div class="mb-4">
-	<label for="groq-api-key" class="block text-sm font-medium text-gray-700">Groq API Key</label>
-	<input
-	type="password"
-    id="groq-api-key"
-    type="text"
-    class="mt-1 p-2 w-full border border-gray-300 rounded-lg"
-    placeholder="Enter Groq API Key"
-	value = ${result.groqAPIKey}
-	/>
-	</div>
-
-	<!-- Input for Notion Database ID -->
-	<div class="mb-4">
-	<label for="notion-database-id" class="block text-sm font-medium text-gray-700">Notion Database ID</label>
-	<input
-	type="password"
-    id="notion-database-id"
-    type="text"
-    class="mt-1 p-2 w-full border border-gray-300 rounded-lg"
-    placeholder="Enter Notion Database ID"
-	value = ${result.notionDatabaseID}
-	/>
-	</div>
-
-	<!-- Input for Notion API Key -->
-	<div class="mb-4">
-	<label for="notion-api-key" class="block text-sm font-medium text-gray-700">Notion API Key</label>
-	<input
-	type="password"
-    id="notion-api-key"
-    type="text"
-    class="mt-1 p-2 w-full border border-gray-300 rounded-lg"
-    placeholder="Enter Notion API Key"
-	value = ${result.notionAPIKey}
-	/>
-	</div>
-	`
-    )
-  })
-})
 
 document.addEventListener('DOMContentLoaded', () => {
   getSavedJobs()
@@ -336,4 +260,84 @@ document.addEventListener('DOMContentLoaded', () => {
       noResultsMessage.classList.remove('hidden')
     }
   })
+
+  document.getElementById('saveJobButton')?.addEventListener('click', async () => {
+    document.querySelector('.save-icon-loading').classList.remove('hidden')
+    document.querySelector('.save-icon').classList.add('hidden')
+    const button = document.getElementById('saveJobButton')
+    button.disabled = true
+
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    })
+
+    if (tab && tab.id) {
+      chrome.scripting.executeScript(
+        {
+          target: { tabId: tab.id },
+          func: () => {
+            const mainElement = document.querySelector('main')
+            const jobText = mainElement
+              ? mainElement.innerText.trim()
+              : document.body.innerText.trim()
+            return { url: document.URL, jobText: jobText }
+          },
+        },
+        (results) => {
+          if (results && results.length > 0) {
+            const { url, jobText } = results[0].result
+            saveJob(url, jobText)
+          } else {
+            alert('Problem parsing content')
+            document.querySelector('.save-icon-loading').classList.add('hidden')
+            document.querySelector('.save-icon').classList.remove('hidden')
+            const button = document.getElementById('saveJobButton')
+            button.disabled = false
+            console.error('Problem parsing content')
+          }
+        }
+      )
+    }
+  })
+
+  document.querySelector('.settings-button').addEventListener('click', () => {
+    document.querySelector('.settings-save-button').classList.remove('hidden')
+
+    chrome.storage.local.get(['groqAPIKey', 'notionAPIKey', 'notionDatabaseID'], (result) => {
+      const fields = [
+        { id: 'groq-api-key', label: 'Groq API Key', value: result.groqAPIKey },
+        { id: 'notion-database-id', label: 'Notion Database ID', value: result.notionDatabaseID },
+        { id: 'notion-api-key', label: 'Notion API Key', value: result.notionAPIKey },
+      ]
+
+      let content = ''
+
+      for (const field of fields) {
+        content += `
+        <div class="mb-4">
+          <label for="${field.id}" class="block text-sm font-medium text-gray-700">${field.label}</label>
+          <input
+            type="password"
+            id="${field.id}"
+            class="mt-1 p-2 w-full border border-gray-300 rounded-lg"
+            placeholder="Enter ${field.label}"
+            value="${field.value || ''}"
+          />
+        </div>
+      `
+      }
+
+      openModal('Settings', content)
+    })
+  })
+
+  const dropdown = document.querySelector('#stat-dropdown')
+  for (const [key, value] of Object.entries(RANGE)) {
+    const option = document.createElement('option')
+    option.value = key
+    option.textContent = value
+    dropdown.appendChild(option)
+  }
+  dropdown.addEventListener('change', (event) => getStats(event.target.value))
 })

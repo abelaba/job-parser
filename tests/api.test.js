@@ -258,13 +258,15 @@ describe('getRecentlySavedJobs', () => {
 
   it('should throw an error if response is not ok', async () => {
     getStorageValue.mockResolvedValueOnce('db-id').mockResolvedValueOnce('api-key')
-
+    const errorMessage = 'Bad Request'
     fetch.mockResolvedValueOnce({
       ok: false,
-      statusText: 'Bad Request',
+      json: async () => ({
+        message: errorMessage,
+      }),
     })
 
-    await expect(getRecentlySavedJobs()).rejects.toThrow('Failed to fetch data: Bad Request')
+    await expect(getRecentlySavedJobs()).rejects.toThrow(errorMessage)
   })
 })
 
@@ -283,7 +285,7 @@ describe('getStats', () => {
       }),
     })
 
-    const stats = await getStats()
+    const stats = await getStats('PASTYEAR')
 
     expect(stats).toEqual({
       Applied: 2,
@@ -293,13 +295,15 @@ describe('getStats', () => {
 
   it('should throw an error if response is not ok', async () => {
     getStorageValue.mockResolvedValueOnce('db-id').mockResolvedValueOnce('api-key')
-
+    const errorMessage = 'Bad Request'
     fetch.mockResolvedValueOnce({
       ok: false,
-      statusText: 'Unauthorized',
+      json: async () => ({
+        message: errorMessage,
+      }),
     })
 
-    await expect(getStats()).rejects.toThrow('Failed to fetch data: Unauthorized')
+    await expect(getStats('PASTYEAR')).rejects.toThrow(errorMessage)
   })
 })
 
@@ -355,13 +359,15 @@ describe('getStreak', () => {
 
   it('should throw an error if response is not ok', async () => {
     getStorageValue.mockResolvedValueOnce('db-id').mockResolvedValueOnce('api-key')
-
+    const errorMessage = 'Bad Request'
     fetch.mockResolvedValueOnce({
       ok: false,
-      statusText: 'Server Error',
+      json: async () => ({
+        message: errorMessage,
+      }),
     })
 
-    await expect(getStreak()).rejects.toThrow('Failed to fetch data: Server Error')
+    await expect(getStreak()).rejects.toThrow(errorMessage)
   })
 })
 
@@ -407,15 +413,18 @@ describe('updateJob', () => {
   it('should throw an error if fetch response is not ok', async () => {
     const fakeApiKey = 'fake-api-key'
     const fakePageId = 'page-id-123'
+    const errorMessage = 'Bad Request'
 
     getStorageValue.mockResolvedValueOnce(fakeApiKey)
 
     fetch.mockResolvedValueOnce({
       ok: false,
-      statusText: 'Bad Request',
+      json: async () => ({
+        message: errorMessage,
+      }),
     })
 
-    await expect(updateJob(fakePageId)).rejects.toThrow('Failed to update data: Bad Request')
+    await expect(updateJob(fakePageId)).rejects.toThrow(errorMessage)
   })
 
   it('should throw an error if getStorageValue fails', async () => {

@@ -37,7 +37,7 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
 
     return true
   } else if (request.action === REQUESTACTION.GETSTATS) {
-    getStats()
+    getStats(request.body.range)
       .then((data) => {
         sendResponse({
           message: SUCCESSMESSAGE,
