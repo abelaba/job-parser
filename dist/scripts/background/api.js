@@ -1,4 +1,5 @@
 import { RANGE } from '../utils/constants.js'
+import { compareJobPostingPrompt, formatDataToJsonPrompt } from '../utils/prompts.js'
 import { getStorageValue } from '../utils/utils.js'
 
 const notionFetchWrapper = async ({ url, method, body = null }) => {
@@ -47,17 +48,7 @@ export const formatDataToJSON = async (jobDescription) => {
         messages: [
           {
             role: 'system',
-            content: `
-		Provide the job title and the country from the job description as a JSON object in the following format:
-		    { 	
-			"jobTitle": "<job-title>", 
-			"country": "<country>",  
-			"company": "<company>", 
-			"description": <a short description of minimum qualifications and required qualifications as a string with bullet points> 
-		    }
-		
-		Respond only with the JSON object, without any additional text or explanation.
-	      `,
+            content: formatDataToJsonPrompt,
           },
           {
             role: 'user',
@@ -65,6 +56,51 @@ export const formatDataToJSON = async (jobDescription) => {
           },
         ],
         model: 'mistral-saba-24b',
+        stream: false,
+        response_format: {
+          type: 'json_object',
+        },
+      }),
+    })
+
+    const responseData = await response.json()
+    if (responseData.error) {
+      throw new Error(responseData.error.message)
+    }
+    const message = responseData.choices[0].message.content
+    const parsedJSON = JSON.parse(message)
+    return parsedJSON
+  } catch (error) {
+    console.error('groqAPIRequest:', error)
+    throw error
+  }
+}
+
+export const compareJobPosting = async ({ resume, jobPosting }) => {
+  try {
+    const GROQAPIKEY = await getStorageValue('groqAPIKey')
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${GROQAPIKEY}`,
+      },
+      body: JSON.stringify({
+        messages: [
+          {
+            role: 'system',
+            content: compareJobPostingPrompt,
+          },
+          {
+            role: 'user',
+            content: 'Resume:\n' + resume,
+          },
+          {
+            role: 'user',
+            content: 'Job Posting:\n' + jobPosting,
+          },
+        ],
+        model: 'gemma2-9b-it',
         stream: false,
         response_format: {
           type: 'json_object',
@@ -190,7 +226,6 @@ export const getRecentlySavedJobs = async () => {
         },
       },
     })
-
     return data.results.map((content) => {
       const { id } = content
       var { link, Company, Country, Link, Description, URL } = content.properties

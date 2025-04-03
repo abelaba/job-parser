@@ -1,5 +1,3 @@
-import { REQUESTACTION } from '../utils/constants'
-
 function showDialog() {
   if (document.getElementById('my-extension-dialog')) return
 
@@ -151,7 +149,7 @@ function showDialog() {
 }
 
 chrome.runtime.onMessage.addListener((request) => {
-  if (request.action === REQUESTACTION.SHOWDIALOG) {
+  if (request.action === 'SHOWDIALOG') {
     showDialog()
   }
 })

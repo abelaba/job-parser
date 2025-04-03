@@ -61,6 +61,7 @@
         </div>
       </div>
       <div class="w-min flex items-center gap-1">
+        <button id="save-resume" class="text-white cursor-pointer">Update Resume</button>
         <div class="flex items-center text-xl font-bold px-4 gap-1 text-white">
           <svg
             class="flame-no-color"
@@ -216,7 +217,7 @@
     </div>
 
     <div
-      class="main-modal fixed w-full h-full inset-0 z-50 overflow-hidden flex justify-center items-center animated fadeIn faster"
+      class="main-modal fixed w-full h-full inset-0 z-50 overflow-hidden flex justify-center items-center animated fadeIn faster max-h-screen overflow-y-auto"
       style="background: rgba(0, 0, 0, 0.7)"
     >
       <div
@@ -258,6 +259,7 @@
       </div>
     </div>
     <script src="scripts/libs/chart.umd.js"></script>
+    <script src="scripts/libs/pdf.min.js"></script>
     <script src="./scripts/index.js" type="module"></script>
   </body>
 </html>

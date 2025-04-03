@@ -1,4 +1,11 @@
-import { saveJob, getRecentlySavedJobs, getStats, getStreak, updateJob } from './api.js'
+import {
+  saveJob,
+  getRecentlySavedJobs,
+  getStats,
+  getStreak,
+  updateJob,
+  compareJobPosting,
+} from './api.js'
 import { sendNotification } from '../utils/utils.js'
 import { SUCCESSMESSAGE, FAILUREMESSAGE, REQUESTACTION } from '../utils/constants.js'
 
@@ -78,6 +85,22 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
       })
       .catch((error) => {
         sendNotification(FAILUREMESSAGE, error.message)
+        sendResponse({
+          message: FAILUREMESSAGE,
+          error: error,
+        })
+      })
+
+    return true
+  } else if (request.action === REQUESTACTION.COMPAREJOB) {
+    compareJobPosting({ resume: request.resume, jobPosting: request.jobPosting })
+      .then((data) => {
+        sendResponse({
+          message: SUCCESSMESSAGE,
+          content: data,
+        })
+      })
+      .catch((error) => {
         sendResponse({
           message: FAILUREMESSAGE,
           error: error,

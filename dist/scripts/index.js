@@ -1,5 +1,5 @@
 import { RANGE, REQUESTACTION, SUCCESSMESSAGE } from './utils/constants.js'
-import { sendNotification } from './utils/utils.js'
+import { getStorageValue, sendNotification } from './utils/utils.js'
 
 const modal = document.querySelector('.main-modal')
 const closeButton = document.querySelector('.modal-close')
@@ -50,6 +50,29 @@ const saveJob = (url, text) => {
   )
 }
 
+const compareJobPosting = (jobPosting) => {
+  const resume = getStorageValue('resumeText')
+
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(
+      {
+        action: REQUESTACTION.COMPAREJOB,
+        resume: resume,
+        jobPosting: jobPosting,
+      },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError)
+        } else if (response.message === SUCCESSMESSAGE) {
+          resolve(response.content)
+        } else {
+          reject(new Error('Unexpected response'))
+        }
+      }
+    )
+  })
+}
+
 const getSavedJobs = () => {
   chrome.runtime.sendMessage(
     {
@@ -73,8 +96,28 @@ const getSavedJobs = () => {
 		</td>
 	    `
           row.querySelector('.apply-btn').addEventListener('click', () => updateJob(data.id))
-          row.querySelector('.open-button').addEventListener('click', () => {
-            openModal('Job Qualification', `<p> ${data.description} </p>`)
+          row.querySelector('.open-button').addEventListener('click', async () => {
+            const result = await compareJobPosting(data.description)
+            const missingSkills = result.missingSkills.join(', ')
+            openModal(
+              'Job Qualification',
+              `
+		<div class="p-2">
+		    <p class="text-lg font-bold"> Summary </p>
+		    <p class="mb-2 leading-relaxed">${data.description}</p>
+		    <div class="mb-2 bg-green-100 border border-green-300 text-green-800 rounded-lg p-3">
+			<strong>Match Score:</strong> ${result.matchScore}
+		    </div>
+		    <div class="bg-red-100 border border-red-300 text-red-800 rounded-lg p-3 mb-2">
+			<strong>Missing Skills:</strong> ${missingSkills}
+		    </div>
+		    <div class="bg-yellow-100 border border-yellow-300 text-yellow-800 rounded-lg p-3">
+			<strong>Recommendations:</strong> ${result.recommendations}
+		    </div>
+
+		    
+		</div>`
+            )
             document.querySelector('.apply-button').classList.remove('hidden')
             document.querySelector('.apply-button').href = data.url
           })
@@ -192,8 +235,8 @@ document.addEventListener('DOMContentLoaded', () => {
   getStats()
   getStreak()
 
+  // On click methods for switching open tabs
   let tabsContainer = document.querySelector('#tabs')
-
   let tabTogglers = tabsContainer.querySelectorAll('#tabs a')
 
   tabTogglers.forEach(function (toggler) {
@@ -215,23 +258,8 @@ document.addEventListener('DOMContentLoaded', () => {
       e.target.parentElement.classList.add('border-b-2')
     })
   })
-  document.querySelector('.settings-save-button').addEventListener('click', () => {
-    const groqAPIKey = document.querySelector('#groq-api-key').value
-    const notionAPIKey = document.querySelector('#notion-api-key').value
-    const notionDatabaseID = document.querySelector('#notion-database-id').value
 
-    chrome.storage.local.set(
-      {
-        groqAPIKey: groqAPIKey,
-        notionAPIKey: notionAPIKey,
-        notionDatabaseID: notionDatabaseID,
-      },
-      () => {
-        sendNotification('Settings Saved', 'Keys Updated')
-      }
-    )
-  })
-
+  // Job list table search method
   document.getElementById('searchInput').addEventListener('input', function (event) {
     const searchTerm = event.target.value.toLowerCase()
     const rows = document.querySelectorAll('tbody tr')
@@ -261,6 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   })
 
+  // Click method for saving a job posting
   document.getElementById('saveJobButton')?.addEventListener('click', async () => {
     document.querySelector('.save-icon-loading').classList.remove('hidden')
     document.querySelector('.save-icon').classList.add('hidden')
@@ -301,6 +330,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   })
 
+  // Method for saving api keys
+  document.querySelector('.settings-save-button').addEventListener('click', () => {
+    const groqAPIKey = document.querySelector('#groq-api-key').value
+    const notionAPIKey = document.querySelector('#notion-api-key').value
+    const notionDatabaseID = document.querySelector('#notion-database-id').value
+
+    chrome.storage.local.set(
+      {
+        groqAPIKey: groqAPIKey,
+        notionAPIKey: notionAPIKey,
+        notionDatabaseID: notionDatabaseID,
+      },
+      () => {
+        sendNotification('Settings Saved', 'Keys Updated')
+      }
+    )
+  })
+
+  // Display api key input fields when settings button is pressed
   document.querySelector('.settings-button').addEventListener('click', () => {
     document.querySelector('.settings-save-button').classList.remove('hidden')
 
@@ -332,6 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
     })
   })
 
+  // Add options to stat range picker dropdown
   const dropdown = document.querySelector('#stat-dropdown')
   for (const [key, value] of Object.entries(RANGE)) {
     const option = document.createElement('option')
@@ -340,4 +389,59 @@ document.addEventListener('DOMContentLoaded', () => {
     dropdown.appendChild(option)
   }
   dropdown.addEventListener('change', (event) => getStats(event.target.value))
+
+  /* eslint-disable-next-line */
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'scripts/libs/pdf.worker.min.js'
+  const fileInput = document.createElement('input')
+  fileInput.type = 'file'
+  fileInput.accept = '.pdf'
+
+  // Method for extracting text from pdf using pdf.js
+  document.querySelector('#save-resume').addEventListener('click', () => {
+    fileInput.click()
+
+    fileInput.onchange = async () => {
+      const file = fileInput.files[0]
+      if (!file) {
+        alert('No file selected.')
+        return
+      }
+
+      const reader = new FileReader()
+
+      reader.onload = async function (event) {
+        const typedarray = new Uint8Array(event.target.result)
+
+        try {
+          /* eslint-disable-next-line */
+          const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise
+
+          let extractedText = ''
+
+          // Loop through each page of the PDF and extract text
+          for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum)
+            const content = await page.getTextContent()
+            const strings = content.items.map((item) => item.str)
+            extractedText += strings.join(' ') + ' '
+          }
+
+          // Store the extracted text in chrome storage
+          chrome.storage.local.set({ resumeText: extractedText }, function () {
+            sendNotification('Resume', 'Resume saved successfully!')
+          })
+        } catch (error) {
+          console.error('Error reading PDF:', error)
+          sendNotification('Resume', 'Failed to extract text from PDF.')
+        }
+      }
+
+      reader.onerror = function (event) {
+        console.error('Error reading file:', event.target.error)
+        sendNotification('Resume', 'Failed to read PDF file.')
+      }
+
+      reader.readAsArrayBuffer(file)
+    }
+  })
 })
