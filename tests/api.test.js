@@ -99,7 +99,7 @@ describe('formatDataToJSON', () => {
 describe('checkIfJobPostingExists', () => {
   it('should not throw if the URL does not exist in the database', async () => {
     fetch.mockResolvedValueOnce({
-      json: async () => ({ results: [] }),
+      json: async () => ({ ok: true, results: [] }),
     })
 
     await expect(checkIfJobPostingExists('https://example.com/job')).resolves.not.toThrow()
@@ -107,12 +107,16 @@ describe('checkIfJobPostingExists', () => {
   })
 
   it('should throw an error if the URL already exists', async () => {
+    let status = 'Not Applied'
     fetch.mockResolvedValueOnce({
-      json: async () => ({ results: [{ id: 'existing-job' }] }),
+      json: async () => ({
+        ok: true,
+        results: [{ id: 'existing-job', properties: { Status: { status: { name: status } } } }],
+      }),
     })
 
     await expect(checkIfJobPostingExists('https://example.com/job')).rejects.toThrow(
-      'URL already exists in the Notion database.'
+      `You have already saved this job. Status=${status}`
     )
   })
 
@@ -288,8 +292,12 @@ describe('getStats', () => {
     const stats = await getStats('PASTYEAR')
 
     expect(stats).toEqual({
-      Applied: 2,
-      'Not Applied': 1,
+      companyCount: {},
+      countryCount: {},
+      statusCount: {
+        Applied: 2,
+        'Not Applied': 1,
+      },
     })
   })
 

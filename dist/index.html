@@ -211,17 +211,31 @@
               class="appearance-none py-2 px-3 rounded-md border border-gray-300 bg-white text-gray-700 shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             ></select>
           </div>
-          <canvas id="myChart" class="px-2"></canvas>
+          <div class="flex flex-col items-center mb-4">
+            <h3 class="text-lg font-semibold mb-2">Status Chart</h3>
+            <canvas id="statusChart" class="px-2 mb-2"></canvas>
+          </div>
+
+          <div class="flex flex-row space-x-2 w-full justify-between">
+            <div class="flex flex-col items-center w-1/2">
+              <h3 class="text-lg font-semibold mb-2">Company Chart</h3>
+              <canvas id="companyChart" class="px-2 mb-2"></canvas>
+            </div>
+            <div class="flex flex-col items-center w-1/2">
+              <h3 class="text-lg font-semibold mb-2">Country Chart</h3>
+              <canvas id="countryChart" class="px-2 mb-2"></canvas>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
     <div
-      class="main-modal fixed w-full h-full inset-0 z-50 overflow-hidden flex justify-center items-center animated fadeIn faster max-h-screen overflow-y-auto"
+      class="main-modal fixed w-full h-full inset-0 z-50 overflow-hidden flex justify-center items-center animated fadeIn faster overflow-y-auto"
       style="background: rgba(0, 0, 0, 0.7)"
     >
       <div
-        class="border border-teal-500 modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto"
+        class="border border-teal-500 modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 max-h-4/5 overflow-y-auto"
       >
         <div class="modal-content py-4 text-left px-6">
           <div class="flex justify-between items-center pb-3">

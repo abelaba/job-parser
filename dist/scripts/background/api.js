@@ -250,6 +250,7 @@ export const getStats = async (range) => {
   try {
     const NOTIONDATABASEID = await getStorageValue('notionDatabaseID')
     const url = `/databases/${NOTIONDATABASEID}/query`
+
     let dateFilter = {}
     if (range === RANGE.PASTYEAR) {
       dateFilter = { past_year: {} }
@@ -258,24 +259,45 @@ export const getStats = async (range) => {
     } else if (range === RANGE.PASTWEEK) {
       dateFilter = { past_week: {} }
     }
+
     const responseJSON = await notionFetchWrapper({
-      url: url,
+      url,
       method: 'POST',
-      body: { filter: { property: 'Created Date', date: dateFilter } },
+      body: {
+        filter: {
+          property: 'Created Date',
+          date: dateFilter,
+        },
+      },
     })
 
-    const count = {}
+    const statusCount = {}
+    const companyCount = {}
+    const countryCount = {}
 
     responseJSON.results.forEach((data) => {
-      const { name } = data.properties.Status.status
-      if (count[name] === undefined) {
-        count[name] = 1
-      } else {
-        count[name] += 1
+      const status = data.properties.Status?.status?.name
+      const company = data.properties.Company?.select?.name
+      const country = data.properties.Country?.select?.name
+
+      if (status) {
+        statusCount[status] = (statusCount[status] || 0) + 1
+      }
+
+      if (company) {
+        companyCount[company] = (companyCount[company] || 0) + 1
+      }
+
+      if (country) {
+        countryCount[country] = (countryCount[country] || 0) + 1
       }
     })
 
-    return count
+    return {
+      statusCount,
+      companyCount,
+      countryCount,
+    }
   } catch (error) {
     console.error('Error fetching data from Notion:', error)
     throw error

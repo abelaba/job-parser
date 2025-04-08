@@ -41,7 +41,10 @@ const saveJob = (url, text) => {
         url: baseUrl,
       },
     },
-    () => {
+    (response) => {
+      if (response.message === SUCCESSMESSAGE) {
+        getSavedJobs()
+      }
       document.querySelector('.save-icon-loading').classList.add('hidden')
       document.querySelector('.save-icon').classList.remove('hidden')
       const button = document.getElementById('saveJobButton')
@@ -81,6 +84,7 @@ const getSavedJobs = () => {
     (response) => {
       if (response.message === SUCCESSMESSAGE) {
         var table = document.querySelector('.recently-saved-jobs')
+        table.innerHTML = ''
         response.content.forEach((data) => {
           const row = document.createElement('tr')
           row.className = 'hover:bg-slate-100 odd:bg-white even:bg-slate-50'
@@ -139,52 +143,61 @@ const getStats = (range = RANGE.PASTYEAR) => {
     },
     (response) => {
       if (response.message === SUCCESSMESSAGE) {
-        /* eslint-disable-next-line */
-        if (Chart.getChart('myChart')) {
-          Chart.getChart('myChart')?.destroy() /* eslint-disable-line */
-        }
-        var ctx = document.getElementById('myChart').getContext('2d')
-        const labels = Object.keys(response.content)
-        const values = Object.values(response.content)
-        const colors = [
-          'rgba(255, 99, 132, 0.6)',
-          'rgba(54, 162, 235, 0.6)',
-          'rgba(255, 206, 86, 0.6)',
-          'rgba(75, 192, 192, 0.6)',
-          'rgba(153, 102, 255, 0.6)',
-          'rgba(255, 159, 64, 0.6)',
-          'rgba(100, 149, 237, 0.6)',
-          'rgba(34, 193, 195, 0.6)',
-          'rgba(253, 187, 45, 0.6)',
-          'rgba(231, 76, 60, 0.6)',
-          'rgba(46, 204, 113, 0.6)',
-        ]
-        /* eslint-disable-next-line */
-        new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: labels,
-            datasets: [
-              {
-                label: range,
-                data: values,
-                backgroundColor: colors.slice(0, values.length),
-              },
-            ],
-          },
-          options: {
-            plugins: {
-              legend: {
-                display: false,
-              },
-            },
-            responsive: true,
-            maintainAspectRation: true,
-          },
-        })
+        const { statusCount, companyCount, countryCount } = response.content
+
+        renderChart('statusChart', 'Status Distribution', 'bar', statusCount)
+        renderChart('companyChart', 'Company Distribution', 'doughnut', companyCount)
+        renderChart('countryChart', 'Country Distribution', 'doughnut', countryCount)
       }
     }
   )
+}
+
+const renderChart = (canvasId, label, chartType, data) => {
+  /* eslint-disable-next-line */
+  if (Chart.getChart(canvasId)) {
+    /* eslint-disable-next-line */
+    Chart.getChart(canvasId).destroy()
+  }
+
+  const ctx = document.getElementById(canvasId).getContext('2d')
+  const labels = Object.keys(data)
+  const values = Object.values(data)
+  const colors = [
+    'rgba(255, 99, 132, 0.6)',
+    'rgba(54, 162, 235, 0.6)',
+    'rgba(255, 206, 86, 0.6)',
+    'rgba(75, 192, 192, 0.6)',
+    'rgba(153, 102, 255, 0.6)',
+    'rgba(255, 159, 64, 0.6)',
+    'rgba(100, 149, 237, 0.6)',
+    'rgba(34, 193, 195, 0.6)',
+    'rgba(253, 187, 45, 0.6)',
+    'rgba(231, 76, 60, 0.6)',
+    'rgba(46, 204, 113, 0.6)',
+  ]
+  /* eslint-disable-next-line */
+  new Chart(ctx, {
+    type: chartType,
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          data: values,
+          backgroundColor: colors.slice(0, values.length),
+        },
+      ],
+    },
+    options: {
+      plugins: {
+        legend: {
+          display: false,
+        },
+      },
+      responsive: true,
+      maintainAspectRatio: true,
+    },
+  })
 }
 
 const getStreak = () => {
