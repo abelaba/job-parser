@@ -53,8 +53,8 @@ const saveJob = (url, text) => {
   )
 }
 
-const compareJobPosting = (jobPosting) => {
-  const resume = getStorageValue('resumeText')
+const compareJobPosting = async (jobPosting) => {
+  const resume = await getStorageValue('resumeText')
 
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(
