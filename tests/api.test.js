@@ -1,443 +1,126 @@
 import { jest } from '@jest/globals'
 
-jest.unstable_mockModule('../dist/scripts/utils/utils', () => ({
-  getStorageValue: jest.fn(),
-}))
+const { getStats, getStreak, getRecentlySavedJobs, updateJob, compareJobPosting, saveJob } =
+  await import('../dist/scripts/background/api')
 
-global.console = {
-  error: jest.fn(),
-}
+const mockJob = { title: 'Software Engineer', company: 'Google' }
+const mockResume = 'My resume content'
+const mockJobPosting = 'Job description content'
 
-const { getStorageValue } = await import('../dist/scripts/utils/utils')
-const {
-  formatDataToJSON,
-  checkIfJobPostingExists,
-  saveJobPosting,
-  getStats,
-  getStreak,
-  getRecentlySavedJobs,
-  updateJob,
-} = await import('../dist/scripts/background/api')
-
-describe('formatDataToJSON', () => {
-  const mockAPIKey = 'fake-api-key'
-  const jobDescription =
-    'Software Engineer at Google in Switzerland. Must have experience with JavaScript and React.'
-
-  const mockResponse = {
-    choices: [
-      {
-        message: {
-          content: JSON.stringify({
-            jobTitle: 'Software Engineer',
-            country: 'Switzerland',
-            company: 'Google',
-            description: '- Experience with JavaScript\n- Experience with React',
-          }),
-        },
-      },
-    ],
-  }
-
-  beforeEach(() => {
-    jest.clearAllMocks()
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
-        json: () => Promise.resolve(mockResponse),
-      })
-    )
-    getStorageValue.mockResolvedValue(mockAPIKey)
-  })
-
-  it('should return parsed JSON from valid job description', async () => {
-    const result = await formatDataToJSON(jobDescription)
-    expect(result).toEqual({
-      jobTitle: 'Software Engineer',
-      country: 'Switzerland',
-      company: 'Google',
-      description: '- Experience with JavaScript\n- Experience with React',
-    })
-    expect(getStorageValue).toHaveBeenCalledWith('groqAPIKey')
-    expect(fetch).toHaveBeenCalledTimes(1)
-  })
-
-  it('should throw an error if fetch returns an error', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
-        json: () => Promise.resolve({ error: { message: 'Unauthorized' } }),
-      })
-    )
-
-    await expect(formatDataToJSON(jobDescription)).rejects.toThrow('Unauthorized')
-  })
-
-  it('should throw if JSON parsing fails', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
-        json: () =>
-          Promise.resolve({
-            choices: [
-              {
-                message: {
-                  content: '{ invalidJSON }',
-                },
-              },
-            ],
-          }),
-      })
-    )
-
-    await expect(formatDataToJSON(jobDescription)).rejects.toThrow()
-  })
-
-  it('should throw if fetch fails', async () => {
-    global.fetch = jest.fn(() => Promise.reject(new Error('Network error')))
-    await expect(formatDataToJSON(jobDescription)).rejects.toThrow('Network error')
-  })
+beforeEach(() => {
+  global.fetch = jest.fn()
 })
 
-describe('checkIfJobPostingExists', () => {
-  it('should not throw if the URL does not exist in the database', async () => {
-    fetch.mockResolvedValueOnce({
-      json: async () => ({ ok: true, results: [] }),
-    })
-
-    await expect(checkIfJobPostingExists('https://example.com/job')).resolves.not.toThrow()
-    expect(fetch).toHaveBeenCalled()
-  })
-
-  it('should throw an error if the URL already exists', async () => {
-    let status = 'Not Applied'
-    fetch.mockResolvedValueOnce({
-      json: async () => ({
-        ok: true,
-        results: [{ id: 'existing-job', properties: { Status: { status: { name: status } } } }],
-      }),
-    })
-
-    await expect(checkIfJobPostingExists('https://example.com/job')).rejects.toThrow(
-      `You have already saved this job. Status=${status}`
-    )
-  })
-
-  it('should throw an error if fetch fails', async () => {
-    fetch.mockRejectedValueOnce(new Error('Network Error'))
-
-    await expect(checkIfJobPostingExists('https://example.com/job')).rejects.toThrow(
-      'Network Error'
-    )
-  })
+afterEach(() => {
+  jest.resetAllMocks()
 })
 
-describe('saveJobPosting', () => {
-  it('should call the Notion API with the correct data', async () => {
-    const fakeDatabaseId = 'test-database-id'
-    const fakeApiKey = 'test-api-key'
-    const mockData = {
-      jobTitle: 'Frontend Developer',
-      url: 'https://example.com/job/frontend-dev',
-      country: 'Germany',
-      company: 'Acme Corp',
-      description: '• Proficiency in React\n• Experience with CSS-in-JS',
-    }
-
-    getStorageValue.mockResolvedValueOnce(fakeDatabaseId).mockResolvedValueOnce(fakeApiKey)
-
-    fetch.mockResolvedValue({
+describe('API Success cases', () => {
+  test('saveJob sends POST request and returns response', async () => {
+    const mockResponse = { id: '1' }
+    fetch.mockResolvedValueOnce({
       ok: true,
-      json: jest.fn().mockResolvedValue({ id: 'mock-page-id' }),
+      json: async () => mockResponse,
     })
 
-    await expect(saveJobPosting(mockData)).resolves.not.toThrow()
-
-    expect(fetch).toHaveBeenCalledWith('https://api.notion.com/v1/pages', {
+    const data = await saveJob(mockJob)
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('http'), {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${fakeApiKey}`,
-        'Notion-Version': '2022-06-28',
-      },
-      body: JSON.stringify({
-        parent: {
-          database_id: fakeDatabaseId,
-        },
-        properties: {
-          Link: {
-            title: [
-              {
-                text: {
-                  content: mockData.jobTitle,
-                  link: {
-                    url: mockData.url,
-                  },
-                },
-              },
-            ],
-          },
-          Status: {
-            status: {
-              name: 'Not Applied',
-            },
-          },
-          Country: {
-            select: {
-              name: mockData.country,
-            },
-          },
-          Company: {
-            select: {
-              name: mockData.company,
-            },
-          },
-          URL: {
-            url: mockData.url,
-          },
-          Description: {
-            rich_text: [
-              {
-                type: 'text',
-                text: {
-                  content: mockData.description,
-                },
-              },
-            ],
-          },
-        },
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(mockJob),
     })
+    expect(data).toEqual(mockResponse)
   })
 
-  it('should throw and log an error if the API call fails', async () => {
-    getStorageValue.mockResolvedValueOnce('test-database-id').mockResolvedValueOnce('test-api-key')
+  test('compareJobPosting returns comparison result', async () => {
+    const mockResult = { matchScore: 85 }
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResult,
+    })
 
-    fetch.mockRejectedValue(new Error('Failed to post to Notion'))
+    const data = await compareJobPosting({ resume: mockResume, jobPosting: mockJobPosting })
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/compare'), expect.any(Object))
+    expect(data).toEqual(mockResult)
+  })
 
+  test('getRecentlySavedJobs returns jobs', async () => {
+    const mockJobs = [{ id: '1' }, { id: '2' }]
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockJobs,
+    })
+
+    const data = await getRecentlySavedJobs()
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/recent'))
+    expect(data).toEqual(mockJobs)
+  })
+
+  test('getStats returns stats data', async () => {
+    const mockStats = { countryCount: 10 }
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockStats,
+    })
+
+    const range = 'PASTYEAR'
+    const data = await getStats(range)
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining(`/stats?range=${range}`))
+    expect(data).toEqual(mockStats)
+  })
+
+  test('getStreak returns streak info', async () => {
+    const mockStreak = { count: 5 }
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockStreak,
+    })
+
+    const data = await getStreak()
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/streak'))
+    expect(data).toEqual(mockStreak)
+  })
+
+  test('updateJob sends PUT request', async () => {
+    fetch.mockResolvedValueOnce({ ok: true })
+
+    await updateJob('id')
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/id'), {
+      method: 'PUT',
+    })
+  })
+})
+
+describe('API failure cases', () => {
+  test('saveJob throws error when fetch fails', async () => {
+    fetch.mockResolvedValueOnce({ ok: false })
+    await expect(saveJob(mockJob)).rejects.toThrow('Failed to save job')
+  })
+
+  test('compareJobPosting throws error when fetch fails', async () => {
+    fetch.mockResolvedValueOnce({ ok: false })
     await expect(
-      saveJobPosting({
-        jobTitle: 'Backend Dev',
-        url: 'https://example.com/job/backend-dev',
-        country: 'Sweden',
-        company: 'Beta Inc',
-        description: '• Python\n• Django',
-      })
-    ).rejects.toThrow('Failed to post to Notion')
-  })
-})
-
-describe('getRecentlySavedJobs', () => {
-  it('should return a list of Not Applied jobs', async () => {
-    getStorageValue.mockResolvedValueOnce('fake-database-id').mockResolvedValueOnce('fake-api-key')
-
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        results: [
-          {
-            properties: {
-              link: null,
-              Company: { select: { name: 'Google' } },
-              Country: { select: { name: 'USA' } },
-              Link: { title: [{ plain_text: 'SWE' }] },
-              URL: { url: 'https://example.com' },
-              Description: { rich_text: [{ plain_text: 'Job desc' }] },
-            },
-          },
-        ],
-      }),
-    })
-
-    const jobs = await getRecentlySavedJobs()
-
-    expect(jobs).toEqual([
-      {
-        link: null,
-        country: 'USA',
-        company: 'Google',
-        url: 'https://example.com',
-        title: 'SWE',
-        description: 'Job desc',
-      },
-    ])
+      compareJobPosting({ resume: mockResume, jobPosting: mockJobPosting })
+    ).rejects.toThrow('Comparison failed')
   })
 
-  it('should throw an error if response is not ok', async () => {
-    getStorageValue.mockResolvedValueOnce('db-id').mockResolvedValueOnce('api-key')
-    const errorMessage = 'Bad Request'
-    fetch.mockResolvedValueOnce({
-      ok: false,
-      json: async () => ({
-        message: errorMessage,
-      }),
-    })
-
-    await expect(getRecentlySavedJobs()).rejects.toThrow(errorMessage)
-  })
-})
-
-describe('getStats', () => {
-  it('should return counts of each status', async () => {
-    getStorageValue.mockResolvedValueOnce('fake-database-id').mockResolvedValueOnce('fake-api-key')
-
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        results: [
-          { properties: { Status: { status: { name: 'Applied' } } } },
-          { properties: { Status: { status: { name: 'Not Applied' } } } },
-          { properties: { Status: { status: { name: 'Applied' } } } },
-        ],
-      }),
-    })
-
-    const stats = await getStats('PASTYEAR')
-
-    expect(stats).toEqual({
-      companyCount: {},
-      countryCount: {},
-      statusCount: {
-        Applied: 2,
-        'Not Applied': 1,
-      },
-    })
+  test('getRecentlySavedJobs throws error when fetch fails', async () => {
+    fetch.mockResolvedValueOnce({ ok: false })
+    await expect(getRecentlySavedJobs()).rejects.toThrow('Failed to get saved jobs')
   })
 
-  it('should throw an error if response is not ok', async () => {
-    getStorageValue.mockResolvedValueOnce('db-id').mockResolvedValueOnce('api-key')
-    const errorMessage = 'Bad Request'
-    fetch.mockResolvedValueOnce({
-      ok: false,
-      json: async () => ({
-        message: errorMessage,
-      }),
-    })
-
-    await expect(getStats('PASTYEAR')).rejects.toThrow(errorMessage)
-  })
-})
-
-describe('getStreak', () => {
-  it('should return correct streak info', async () => {
-    const today = new Date()
-    const yesterday = new Date(today)
-    yesterday.setDate(today.getDate() - 1)
-
-    const twoDaysAgo = new Date(today)
-    twoDaysAgo.setDate(today.getDate() - 2)
-
-    getStorageValue.mockResolvedValueOnce('fake-database-id').mockResolvedValueOnce('fake-api-key')
-
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        results: [
-          { properties: { 'Applied Date': { date: { start: today.toISOString() } } } },
-          { properties: { 'Applied Date': { date: { start: yesterday.toISOString() } } } },
-          { properties: { 'Applied Date': { date: { start: twoDaysAgo.toISOString() } } } },
-        ],
-      }),
-    })
-
-    const result = await getStreak()
-
-    expect(result).toEqual({
-      maxStreak: 3,
-      currentStreak: 3,
-      lastAppliedDate: today.toLocaleDateString(),
-    })
+  test('getStats throws error when fetch fails', async () => {
+    fetch.mockResolvedValueOnce({ ok: false })
+    await expect(getStats('PASTYEAR')).rejects.toThrow('Failed to fetch stats')
   })
 
-  it('should return 0s if no dates exist', async () => {
-    getStorageValue.mockResolvedValueOnce('fake-database-id').mockResolvedValueOnce('fake-api-key')
-
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        results: [],
-      }),
-    })
-
-    const result = await getStreak()
-
-    expect(result).toEqual({
-      maxStreak: 0,
-      currentStreak: 0,
-      lastAppliedDate: '',
-    })
+  test('getStreak throws error when fetch fails', async () => {
+    fetch.mockResolvedValueOnce({ ok: false })
+    await expect(getStreak()).rejects.toThrow('Failed to get streak')
   })
 
-  it('should throw an error if response is not ok', async () => {
-    getStorageValue.mockResolvedValueOnce('db-id').mockResolvedValueOnce('api-key')
-    const errorMessage = 'Bad Request'
-    fetch.mockResolvedValueOnce({
-      ok: false,
-      json: async () => ({
-        message: errorMessage,
-      }),
-    })
-
-    await expect(getStreak()).rejects.toThrow(errorMessage)
-  })
-})
-
-describe('updateJob', () => {
-  it('should make a PATCH request to update the job status and applied date', async () => {
-    const fakeApiKey = 'fake-api-key'
-    const fakePageId = 'page-id-123'
-
-    getStorageValue.mockResolvedValueOnce(fakeApiKey)
-
-    fetch.mockResolvedValueOnce({
-      ok: true,
-    })
-
-    await updateJob(fakePageId)
-
-    const today = new Date()
-
-    expect(fetch).toHaveBeenCalledWith(`https://api.notion.com/v1/pages/${fakePageId}`, {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${fakeApiKey}`,
-        'Content-Type': 'application/json',
-        'Notion-Version': '2022-06-28',
-      },
-      body: JSON.stringify({
-        properties: {
-          Status: {
-            status: {
-              name: 'Applied',
-            },
-          },
-          'Applied Date': {
-            date: {
-              start: today.toISOString(),
-            },
-          },
-        },
-      }),
-    })
-  })
-
-  it('should throw an error if fetch response is not ok', async () => {
-    const fakeApiKey = 'fake-api-key'
-    const fakePageId = 'page-id-123'
-    const errorMessage = 'Bad Request'
-
-    getStorageValue.mockResolvedValueOnce(fakeApiKey)
-
-    fetch.mockResolvedValueOnce({
-      ok: false,
-      json: async () => ({
-        message: errorMessage,
-      }),
-    })
-
-    await expect(updateJob(fakePageId)).rejects.toThrow(errorMessage)
-  })
-
-  it('should throw an error if getStorageValue fails', async () => {
-    getStorageValue.mockRejectedValueOnce(new Error('Storage fetch failed'))
-
-    await expect(updateJob('page-id-123')).rejects.toThrow('Storage fetch failed')
+  test('updateJob throws error when fetch fails', async () => {
+    fetch.mockResolvedValueOnce({ ok: false })
+    await expect(updateJob('id')).rejects.toThrow('Failed to update job')
   })
 })
