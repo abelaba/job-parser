@@ -18,7 +18,7 @@ func RegisterHandlers(r *gin.Engine){
 
 func main() {
 	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println("Error loading .env file")
 	}
 
 	mode := os.Getenv("MODE")
