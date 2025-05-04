@@ -4,26 +4,38 @@ import (
 	"job-parser-backend/internal/handler"
 	"log"
 	"os"
-
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
 
+func RegisterHandlers(r *gin.Engine){
+	handler.RegisterJobHandler(r)
+}
+
 func main() {
-	err := godotenv.Load() 
-	if err != nil {
+	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
 	}
+
+	mode := os.Getenv("MODE")
+	if(mode == "release") {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	log.Println("Running in", gin.Mode(), "mode")
+
 	router:= gin.Default()
-	handler.RegisterJobHandler(router)
+
+	RegisterHandlers(router)
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8000"
 	}
 
-	err = router.Run("0.0.0.0:" + port)
-	if err != nil {
+	log.Println("Server starting on port", port)
+
+	if err := router.Run(":" + port); err != nil {
 		log.Fatal("Failed to start server: ", err)
 	}
 }
