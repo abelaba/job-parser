@@ -6,21 +6,21 @@ import (
 
 func SaveJob(job model.Job) (*model.Job, error) {
 	err := CheckIfJobPostingExists(job.URL)
-	if err != nil {	
+	if err != nil {
 		return nil, err
 	}
 
 	res, err := FormatDataToJSON(job.Description)
 	if err != nil {
-		return nil,  err
+		return nil, err
 	}
 
 	parsedJob := &model.Job{
-		URL:        job.URL,
+		URL:         job.URL,
 		Description: res.Description,
-		Company:    res.Company,
-		Country:    res.Country,
-		Title:      res.Title,
+		Company:     res.Company,
+		Country:     res.Country,
+		Title:       res.Title,
 	}
 
 	savedJob, err := SaveJobPosting(parsedJob)
@@ -30,4 +30,3 @@ func SaveJob(job model.Job) (*model.Job, error) {
 
 	return savedJob, nil
 }
-

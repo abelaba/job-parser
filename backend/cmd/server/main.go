@@ -1,14 +1,14 @@
 package main
 
 import (
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"job-parser-backend/internal/handler"
 	"log"
 	"os"
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 )
 
-func RegisterHandlers(r *gin.Engine){
+func RegisterHandlers(r *gin.Engine) {
 	// Health Check
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "healthy"})
@@ -22,13 +22,13 @@ func main() {
 	}
 
 	mode := os.Getenv("MODE")
-	if(mode == "release") {
+	if mode == "release" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
 	log.Println("Running in", gin.Mode(), "mode")
 
-	router:= gin.Default()
+	router := gin.Default()
 
 	RegisterHandlers(router)
 

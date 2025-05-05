@@ -1,5 +1,6 @@
 package model
 
+// NotionProperties maps the structured properties of a Notion job entry.
 type NotionProperties struct {
 	AppliedDate struct {
 		Date *struct {
@@ -36,10 +37,12 @@ type NotionProperties struct {
 	} `json:"Description"`
 }
 
+// NotionPage represents a single Notion page with job properties.
 type NotionPage struct {
 	Properties NotionProperties `json:"properties"`
 }
 
+// NotionResponse represents the full response from a Notion API query.
 type NotionResponse struct {
 	Results []struct {
 		ID         string           `json:"id"`
