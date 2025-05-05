@@ -1,5 +1,6 @@
 package model
 
+// GroqResponse is the response structure from the Groq API.
 type GroqResponse struct {
 	Choices []struct {
 		Message struct {
@@ -7,3 +8,4 @@ type GroqResponse struct {
 		} `json:"message"`
 	} `json:"choices"`
 }
+

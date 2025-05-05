@@ -1,11 +1,11 @@
 package handler
 
 import (
+	"github.com/gin-gonic/gin"
 	"job-parser-backend/internal/model"
 	"job-parser-backend/internal/service"
 	"log"
 	"net/http"
-	"github.com/gin-gonic/gin"
 )
 
 func RegisterJobHandler(router *gin.Engine) {
@@ -39,7 +39,7 @@ func SaveJobHandler(context *gin.Context) {
 
 func CompareJobPostingHandler(context *gin.Context) {
 	type CompareJobPostingRequest struct {
-		Resume    any  `json:"resume"`
+		Resume     any    `json:"resume"`
 		JobPosting string `json:"jobPosting"`
 	}
 	var req CompareJobPostingRequest
@@ -89,14 +89,14 @@ func CheckIfJobPostingExistsHandler(context *gin.Context) {
 }
 
 func UpdateJobHandler(context *gin.Context) {
-	pageId := context.Param("pageID")
+	pageID := context.Param("pageID")
 
-	if pageId == "" {
+	if pageID == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "Missing pageID in path"})
 		return
 	}
 
-	err := service.UpdateJob(pageId)
+	err := service.UpdateJob(pageID)
 	if err != nil {
 		logError(err)
 		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update job"})
@@ -107,7 +107,7 @@ func UpdateJobHandler(context *gin.Context) {
 
 func GetStatsHandler(context *gin.Context) {
 	rangeParam := context.Query("range")
-	
+
 	statResult, err := service.GetStats(rangeParam)
 	if err != nil {
 		logError(err)
@@ -130,4 +130,3 @@ func GetStreakHandler(context *gin.Context) {
 func logError(err error) {
 	log.Printf("Error: %v", err)
 }
-

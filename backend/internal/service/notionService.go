@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"job-parser-backend/internal/model"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -57,7 +58,6 @@ func notionRequestWrapper(requestType string, url string, body map[string]any, r
 	return nil
 }
 
-
 func GetRecentlySavedJobs() ([]model.Job, error) {
 	notionDatabaseId := os.Getenv("NOTION_DATABASE_ID")
 	url := fmt.Sprintf("databases/%v/query", notionDatabaseId)
@@ -81,7 +81,7 @@ func GetRecentlySavedJobs() ([]model.Job, error) {
 
 	var recentJobs []model.Job
 
-	for _, content:= range notionResponse.Results {
+	for _, content := range notionResponse.Results {
 		recentJobs = append(recentJobs, model.Job{
 			ID:          content.ID,
 			Country:     content.Properties.Country.Select.Name,
@@ -115,7 +115,7 @@ func CheckIfJobPostingExists(jobPostingUrl string) error {
 		return err
 	}
 
-	if(notionResponse.Results != nil && len(notionResponse.Results) > 0){
+	if notionResponse.Results != nil && len(notionResponse.Results) > 0 {
 		return errors.New("You have already applied to this position")
 	}
 
@@ -123,7 +123,7 @@ func CheckIfJobPostingExists(jobPostingUrl string) error {
 }
 
 func SaveJobPosting(data *model.Job) (*model.Job, error) {
-	url:= "pages"
+	url := "pages"
 	notionDatabaseId := os.Getenv("NOTION_DATABASE_ID")
 
 	body := map[string]any{
@@ -182,11 +182,11 @@ func SaveJobPosting(data *model.Job) (*model.Job, error) {
 	}
 
 	savedJob := &model.Job{
-			Country:     notionProperties.Properties.Country.Select.Name,
-			Company:     notionProperties.Properties.Company.Select.Name,
-			URL:         notionProperties.Properties.URL.URL,
-			Title:       notionProperties.Properties.Link.Title[0].PlainText,
-			Description: notionProperties.Properties.Description.RichText[0].PlainText,
+		Country:     notionProperties.Properties.Country.Select.Name,
+		Company:     notionProperties.Properties.Company.Select.Name,
+		URL:         notionProperties.Properties.URL.URL,
+		Title:       notionProperties.Properties.Link.Title[0].PlainText,
+		Description: notionProperties.Properties.Description.RichText[0].PlainText,
 	}
 
 	return savedJob, nil
@@ -219,7 +219,6 @@ func UpdateJob(pageId string) error {
 
 	return nil
 }
-
 
 func GetStats(dateRange string) (*model.StatsResult, error) {
 	databaseID := os.Getenv("NOTION_DATABASE_ID")
@@ -256,12 +255,26 @@ func GetStats(dateRange string) (*model.StatsResult, error) {
 		StatusCount:  make(map[string]int),
 		CompanyCount: make(map[string]int),
 		CountryCount: make(map[string]int),
+		DailyCount: make(map[string]int),
 	}
 
 	for _, data := range notionResponse.Results {
 		status := data.Properties.Status.Status.Name
 		company := data.Properties.Company.Select.Name
 		country := data.Properties.Country.Select.Name
+		if data.Properties.AppliedDate.Date != nil {
+			date := data.Properties.AppliedDate.Date.Start
+			t, err := time.Parse(time.RFC3339, date)
+			if err == nil {
+				now := time.Now()
+				if now.Sub(t).Hours() <= 30*24 { // Check if the date is in the last 30 days
+					str := t.Format("2006-01-02")
+					stats.DailyCount[str]++
+				}
+			} else {
+				log.Printf("Failed to parse date: %v", err)
+			}
+		}
 
 		if status != "" {
 			stats.StatusCount[status]++
@@ -272,11 +285,9 @@ func GetStats(dateRange string) (*model.StatsResult, error) {
 		if country != "" {
 			stats.CountryCount[country]++
 		}
-
 	}
 
 	return stats, nil
-
 }
 
 func GetStreak() (*model.StreakStats, error) {
@@ -317,7 +328,7 @@ func GetStreak() (*model.StreakStats, error) {
 	}
 
 	if len(dates) == 0 {
-		return &model.StreakStats{MaxStreak: 0, CurrentStreak: 0, LastAppliedDate: ""}, nil
+		return &model.StreakStats{TotalCount: 0, MaxStreak: 0, CurrentStreak: 0, LastAppliedDate: ""}, nil
 	}
 
 	maxStreak := 1
@@ -356,6 +367,7 @@ func GetStreak() (*model.StreakStats, error) {
 	}
 
 	return &model.StreakStats{
+		TotalCount: len(dates),
 		MaxStreak:       maxStreak,
 		CurrentStreak:   realCurrentStreak,
 		LastAppliedDate: dates[0].Format("2006-01-02"),

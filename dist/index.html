@@ -121,6 +121,9 @@
           </svg>
           <span id="streakCount">-</span>
         </div>
+        <div class="flex items-center text-xl font-bold pr-4 text-white">
+          <span id="totalCount">-</span>
+        </div>
         <button
           class="settings-button flex items-center justify-center w-8 h-8 text-white rounded-full cursor-pointer"
         >
@@ -214,6 +217,10 @@
           <div class="flex flex-col items-center mb-4">
             <h3 class="text-lg font-semibold mb-2">Status Chart</h3>
             <canvas id="statusChart" class="px-2 mb-2"></canvas>
+          </div>
+          <div class="flex flex-col items-center mb-4">
+            <h3 class="text-lg font-semibold mb-2">Daily Count Chart</h3>
+            <canvas id="dailyCountChart" class="px-2 mb-2"></canvas>
           </div>
 
           <div class="flex flex-row space-x-2 w-full justify-between">

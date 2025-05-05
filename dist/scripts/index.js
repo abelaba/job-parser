@@ -37,7 +37,7 @@ const saveJob = (url, text) => {
     {
       action: REQUESTACTION.SAVEJOB,
       data: {
-        jobDescription: text,
+        description: text,
         url: baseUrl,
       },
     },
@@ -143,11 +143,12 @@ const getStats = (range = RANGE.PASTYEAR) => {
     },
     (response) => {
       if (response.message === SUCCESSMESSAGE) {
-        const { statusCount, companyCount, countryCount } = response.content
+        const { statusCount, companyCount, countryCount, dailyCount } = response.content
 
         renderChart('statusChart', 'Status Distribution', 'bar', statusCount)
         renderChart('companyChart', 'Company Distribution', 'doughnut', companyCount)
         renderChart('countryChart', 'Country Distribution', 'doughnut', countryCount)
+        renderChart('dailyCountChart', 'Count Distribution', 'line', dailyCount)
       }
     }
   )
@@ -207,8 +208,9 @@ const getStreak = () => {
     },
     (response) => {
       if (response.message === SUCCESSMESSAGE) {
-        const { lastAppliedDate, currentStreak } = response.content
+        const { lastAppliedDate, currentStreak, totalCount } = response.content
         document.querySelector('#streakCount').innerHTML = currentStreak
+        document.querySelector('#totalCount').innerHTML = totalCount
         if (currentStreak === 0) {
           document.querySelector('.flame-color').classList.add('hidden')
           document.querySelector('.flame-no-color').classList.remove('hidden')
@@ -345,15 +347,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Method for saving api keys
   document.querySelector('.settings-save-button').addEventListener('click', () => {
-    const groqAPIKey = document.querySelector('#groq-api-key').value
-    const notionAPIKey = document.querySelector('#notion-api-key').value
-    const notionDatabaseID = document.querySelector('#notion-database-id').value
-
+    const baseURLInput = document.querySelector('#base-url-input').value
     chrome.storage.local.set(
       {
-        groqAPIKey: groqAPIKey,
-        notionAPIKey: notionAPIKey,
-        notionDatabaseID: notionDatabaseID,
+        baseURLInput: baseURLInput,
       },
       () => {
         sendNotification('Settings Saved', 'Keys Updated')
@@ -365,12 +362,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelector('.settings-button').addEventListener('click', () => {
     document.querySelector('.settings-save-button').classList.remove('hidden')
 
-    chrome.storage.local.get(['groqAPIKey', 'notionAPIKey', 'notionDatabaseID'], (result) => {
-      const fields = [
-        { id: 'groq-api-key', label: 'Groq API Key', value: result.groqAPIKey },
-        { id: 'notion-database-id', label: 'Notion Database ID', value: result.notionDatabaseID },
-        { id: 'notion-api-key', label: 'Notion API Key', value: result.notionAPIKey },
-      ]
+    chrome.storage.local.get(['baseURLInput'], (result) => {
+      const fields = [{ id: 'base-url-input', label: 'Base URL', value: result.baseURLInput }]
 
       let content = ''
 
