@@ -36,6 +36,7 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
         })
       })
       .catch((error) => {
+        sendNotification(FAILUREMESSAGE, error.message)
         sendResponse({
           message: FAILUREMESSAGE,
           error: error,
@@ -52,6 +53,7 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
         })
       })
       .catch((error) => {
+        sendNotification(FAILUREMESSAGE, error.message)
         sendResponse({
           message: FAILUREMESSAGE,
           error: error,
@@ -68,6 +70,7 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
         })
       })
       .catch((error) => {
+        sendNotification(FAILUREMESSAGE, error.message)
         sendResponse({
           message: FAILUREMESSAGE,
           error: error,
@@ -101,6 +104,7 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
         })
       })
       .catch((error) => {
+        sendNotification(FAILUREMESSAGE, error.message)
         sendResponse({
           message: FAILUREMESSAGE,
           error: error,

@@ -15,3 +15,7 @@ export const RANGE = {
   PASTMONTH: 'PASTMONTH',
   PASTWEEK: 'PASTWEEK',
 }
+
+export const STORAGEKEY = {
+  baseURL: 'baseURL',
+}

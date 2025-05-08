@@ -1,5 +1,11 @@
 import { jest } from '@jest/globals'
 
+jest.unstable_mockModule('../dist/scripts/utils/utils', () => ({
+  getStorageValue: jest.fn(),
+}))
+
+const { getStorageValue } = await import('../dist/scripts/utils/utils')
+
 const { getStats, getStreak, getRecentlySavedJobs, updateJob, compareJobPosting, saveJob } =
   await import('../dist/scripts/background/api')
 
@@ -9,6 +15,7 @@ const mockJobPosting = 'Job description content'
 
 beforeEach(() => {
   global.fetch = jest.fn()
+  getStorageValue.mockResolvedValue('https:localhost:4000/api/job/')
 })
 
 afterEach(() => {
@@ -52,7 +59,7 @@ describe('API Success cases', () => {
     })
 
     const data = await getRecentlySavedJobs()
-    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/recent'))
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/recent'), expect.any(Object))
     expect(data).toEqual(mockJobs)
   })
 
@@ -65,7 +72,10 @@ describe('API Success cases', () => {
 
     const range = 'PASTYEAR'
     const data = await getStats(range)
-    expect(fetch).toHaveBeenCalledWith(expect.stringContaining(`/stats?range=${range}`))
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining(`/stats?range=${range}`),
+      expect.any(Object)
+    )
     expect(data).toEqual(mockStats)
   })
 
@@ -77,7 +87,7 @@ describe('API Success cases', () => {
     })
 
     const data = await getStreak()
-    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/streak'))
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/streak'), expect.any(Object))
     expect(data).toEqual(mockStreak)
   })
 
