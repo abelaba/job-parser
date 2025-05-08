@@ -1,4 +1,4 @@
-import { RANGE, REQUESTACTION, SUCCESSMESSAGE } from './utils/constants.js'
+import { RANGE, REQUESTACTION, STORAGEKEY, SUCCESSMESSAGE } from './utils/constants.js'
 import { getStorageValue, sendNotification } from './utils/utils.js'
 
 const modal = document.querySelector('.main-modal')
@@ -350,7 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const baseURLInput = document.querySelector('#base-url-input').value
     chrome.storage.local.set(
       {
-        baseURLInput: baseURLInput,
+        [STORAGEKEY.baseURL]: baseURLInput,
       },
       () => {
         sendNotification('Settings Saved', 'Keys Updated')
@@ -358,12 +358,12 @@ document.addEventListener('DOMContentLoaded', () => {
     )
   })
 
-  // Display api key input fields when settings button is pressed
+  // Display input fields when settings button is pressed
   document.querySelector('.settings-button').addEventListener('click', () => {
     document.querySelector('.settings-save-button').classList.remove('hidden')
 
-    chrome.storage.local.get(['baseURLInput'], (result) => {
-      const fields = [{ id: 'base-url-input', label: 'Base URL', value: result.baseURLInput }]
+    chrome.storage.local.get([STORAGEKEY.baseURL], (result) => {
+      const fields = [{ id: 'base-url-input', label: 'Base URL', value: result.baseURL }]
 
       let content = ''
 
@@ -372,7 +372,6 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="mb-4">
           <label for="${field.id}" class="block text-sm font-medium text-gray-700">${field.label}</label>
           <input
-            type="password"
             id="${field.id}"
             class="mt-1 p-2 w-full border border-gray-300 rounded-lg"
             placeholder="Enter ${field.label}"
