@@ -225,6 +225,7 @@ func GetStats(dateRange string) (*model.StatsResult, error) {
 	url := fmt.Sprintf("databases/%s/query", databaseID)
 
 	var dateFilter map[string]any
+	rangeNumber := 30 // Default to 30 days
 	switch dateRange {
 	case "PASTYEAR":
 		dateFilter = map[string]any{"past_year": map[string]any{}}
@@ -232,8 +233,10 @@ func GetStats(dateRange string) (*model.StatsResult, error) {
 		dateFilter = map[string]any{"past_month": map[string]any{}}
 	case "PASTWEEK":
 		dateFilter = map[string]any{"past_week": map[string]any{}}
+		rangeNumber = 7
 	default:
 		dateFilter = map[string]any{"past_year": map[string]any{}}
+
 	}
 
 	body := map[string]any{
@@ -256,6 +259,14 @@ func GetStats(dateRange string) (*model.StatsResult, error) {
 		CompanyCount: make(map[string]int),
 		CountryCount: make(map[string]int),
 		DailyCount: make(map[string]int),
+	}
+
+	// Initialize DailyCount for the last 30 days
+	startDate := time.Now()
+	
+	for i := 0; i < rangeNumber; i++ {
+		str := startDate.AddDate(0, 0, -i).Format("2006-01-02")
+		stats.DailyCount[str] = 0
 	}
 
 	for _, data := range notionResponse.Results {
