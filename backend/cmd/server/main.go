@@ -1,19 +1,35 @@
 package main
 
 import (
+	"job-parser-backend/internal/client"
+	"job-parser-backend/internal/handler"
+	"job-parser-backend/internal/service"
+	"log"
+	"net/http"
+	"os"
+
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"job-parser-backend/internal/handler"
-	"log"
-	"os"
 )
 
-func RegisterHandlers(r *gin.Engine) {
+func Initalize(r *gin.Engine) {
+	// Initialize clients
+	httpClient := &http.Client{}
+	notionClient, groqClient, err := client.CreateClients(httpClient)
+
+	if err != nil {
+		log.Fatal("Failed to create clients: ", err)
+	}
+	// Initialize services
+	jobService := service.NewJobService(notionClient, groqClient)
+
+	// Initialize handlers
+	handler.CreateJobHandler(jobService, r)
+
 	// Health Check
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "healthy"})
 	})
-	handler.RegisterJobHandler(r)
 }
 
 func main() {
@@ -30,7 +46,7 @@ func main() {
 
 	router := gin.Default()
 
-	RegisterHandlers(router)
+	Initalize(router)
 
 	port := os.Getenv("PORT")
 	if port == "" {
