@@ -1,66 +1,148 @@
 package service
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
+	"job-parser-backend/internal/client"
 	"job-parser-backend/internal/model"
+	"job-parser-backend/internal/utils"
 	"log"
-	"net/http"
 	"os"
 	"time"
 )
 
-func notionRequestWrapper(requestType string, url string, body map[string]any, responseFormat any) error {
-	const notionBaseURL string = "https://api.notion.com/v1/"
-
-	notionApiKey := os.Getenv("NOTION_API_KEY")
-	if notionApiKey == "" {
-		return errors.New("Notion API key is not set")
-	}
-
-	url = notionBaseURL + url
-
-	bodyBytes, err := json.Marshal(body)
-	if err != nil {
-		return fmt.Errorf("error marshalling request body: %w", err)
-	}
-
-	request, err := http.NewRequest(requestType, url, bytes.NewBuffer(bodyBytes))
-	if err != nil {
-		return fmt.Errorf("error creating HTTP request: %w", err)
-	}
-
-	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("Authorization", "Bearer "+notionApiKey)
-	request.Header.Set("Notion-Version", "2022-06-28")
-
-	client := &http.Client{}
-	response, err := client.Do(request)
-	if err != nil {
-		return fmt.Errorf("error sending HTTP request: %w", err)
-	}
-	defer response.Body.Close()
-
-	if response.StatusCode != 200 {
-		body, _ := io.ReadAll(response.Body)
-		return fmt.Errorf("Notion request returned status code %d with body: %s", response.StatusCode, string(body))
-	}
-
-	if responseFormat != nil {
-		if err := json.NewDecoder(response.Body).Decode(&responseFormat); err != nil {
-			return fmt.Errorf("error decoding response body to JSON: %w", err)
-		}
-	}
-
-	return nil
+type JobService interface {
+	SaveJob(job model.Job) (*model.Job, error)
+	checkIfJobPostingExists(url string) error
+	UpdateJob(pageID string) error
+	GetRecentlySavedJobs() ([]model.Job, error)
+	GetStats(dateRange string) (*model.StatsResult, error)
+	GetStreak() (*model.StreakStats, error)
+	formatJobDescriptionToJSON(jobDescription string) (*model.Job, error)
+	CompareJobPosting(resume any, jobPosting string) (*model.JobComparison, error)
+	saveJobPosting(job *model.Job) (*model.Job, error)
 }
 
-func GetRecentlySavedJobs() ([]model.Job, error) {
+type jobService struct {
+	notionClient client.NotionClient
+	groqClient   client.GroqClient
+}
+
+func NewJobService(notionClient client.NotionClient, groqClient client.GroqClient) JobService {
+	return &jobService{
+		notionClient: notionClient,
+		groqClient:   groqClient,
+	}
+}
+
+func(s *jobService) SaveJob(job model.Job) (*model.Job, error) {
+	err := s.checkIfJobPostingExists(job.URL)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := s.formatJobDescriptionToJSON(job.Description)
+	if err != nil {
+		return nil, err
+	}
+
+	parsedJob := &model.Job{
+		URL:         job.URL,
+		Description: res.Description,
+		Company:     res.Company,
+		Country:     res.Country,
+		Title:       res.Title,
+	}
+
+	savedJob, err := s.saveJobPosting(parsedJob)
+	if err != nil {
+		return nil, err
+	}
+
+	return savedJob, nil
+}
+
+func(s *jobService) formatJobDescriptionToJSON(jobDescription string) (*model.Job, error) {
+	body := map[string]any{
+		"messages": []map[string]string{
+			{
+				"role":    "system",
+				"content": utils.FormatDataToJsonPrompt,
+			},
+			{
+				"role":    "user",
+				"content": jobDescription,
+			},
+		},
+		"model":  "mistral-saba-24b",
+		"stream": false,
+		"response_format": map[string]string{
+			"type": "json_object",
+		},
+	}
+
+	response, err := s.groqClient.POST("", body)
+	
+	if err != nil {
+		return nil, fmt.Errorf("error making Groq request: %w", err)
+	}
+	
+	var job model.Job
+	if err := json.Unmarshal([]byte(response.Choices[0].Message.Content), &job); err != nil {
+		return nil, fmt.Errorf("error decoding job JSON: %w", err)
+	}
+
+	return &job, nil
+}
+
+func(s *jobService) CompareJobPosting(resume any, jobPosting string) (*model.JobComparison, error) {
+	bytes, err := json.Marshal(resume)
+	if err != nil {
+		return nil, fmt.Errorf("error marshalling resume: %w", err)
+	}
+
+	resumeString := string(bytes)
+
+	body := map[string]any{
+		"messages": []map[string]string{
+			{
+				"role":    "system",
+				"content": utils.CompareJobPostingPrompt,
+			},
+			{
+				"role":    "user",
+				"content": "Resume:\n" + resumeString,
+			},
+			{
+				"role":    "user",
+				"content": "Job Posting:\n" + jobPosting,
+			},
+		},
+		"model":  "gemma2-9b-it",
+		"stream": false,
+		"response_format": map[string]string{
+			"type": "json_object",
+		},
+	}
+
+	response, err := s.groqClient.POST("", body)
+	
+	if err != nil {
+		return nil, fmt.Errorf("error making Groq request: %w", err)
+	}
+
+	var jobComparison model.JobComparison
+	if err := json.Unmarshal([]byte(response.Choices[0].Message.Content), &jobComparison); err != nil {
+		return nil, fmt.Errorf("error decoding inner job comparison JSON: %w", err)
+	}
+
+	return &jobComparison, nil
+}
+
+
+func(s *jobService) GetRecentlySavedJobs() ([]model.Job, error) {
 	notionDatabaseId := os.Getenv("NOTION_DATABASE_ID")
-	url := fmt.Sprintf("databases/%v/query", notionDatabaseId)
 
 	body := map[string]any{
 		"filter": map[string]any{
@@ -71,9 +153,7 @@ func GetRecentlySavedJobs() ([]model.Job, error) {
 		},
 	}
 
-	var notionResponse model.NotionResponse
-
-	err := notionRequestWrapper("POST", url, body, &notionResponse)
+	response, err := s.notionClient.GetNotionDatabase(notionDatabaseId, body)
 
 	if err != nil {
 		return nil, err
@@ -81,7 +161,7 @@ func GetRecentlySavedJobs() ([]model.Job, error) {
 
 	var recentJobs []model.Job
 
-	for _, content := range notionResponse.Results {
+	for _, content := range response.Results {
 		recentJobs = append(recentJobs, model.Job{
 			ID:          content.ID,
 			Country:     content.Properties.Country.Select.Name,
@@ -96,9 +176,8 @@ func GetRecentlySavedJobs() ([]model.Job, error) {
 
 }
 
-func CheckIfJobPostingExists(jobPostingUrl string) error {
+func(s *jobService) checkIfJobPostingExists(jobPostingUrl string) error {
 	notionDatabaseId := os.Getenv("NOTION_DATABASE_ID")
-	url := fmt.Sprintf("databases/%v/query", notionDatabaseId)
 
 	body := map[string]any{
 		"filter": map[string]any{
@@ -109,27 +188,23 @@ func CheckIfJobPostingExists(jobPostingUrl string) error {
 		},
 	}
 
-	var notionResponse model.NotionResponse
+	response, err := s.notionClient.GetNotionDatabase(notionDatabaseId, body)
 
-	if err := notionRequestWrapper("POST", url, body, &notionResponse); err != nil {
+	if err != nil {
 		return err
 	}
 
-	if notionResponse.Results != nil && len(notionResponse.Results) > 0 {
+	if response.Results != nil && len(response.Results) > 0 {
 		return errors.New("You have already applied to this position")
 	}
 
 	return nil
 }
 
-func SaveJobPosting(data *model.Job) (*model.Job, error) {
-	url := "pages"
+func(s *jobService) saveJobPosting(data *model.Job) (*model.Job, error) {
 	notionDatabaseId := os.Getenv("NOTION_DATABASE_ID")
 
 	body := map[string]any{
-		"parent": map[string]any{
-			"database_id": notionDatabaseId,
-		},
 		"properties": map[string]any{
 			"Link": map[string]any{
 				"title": []map[string]any{
@@ -173,28 +248,25 @@ func SaveJobPosting(data *model.Job) (*model.Job, error) {
 		},
 	}
 
-	var notionProperties model.NotionPage
-
-	err := notionRequestWrapper("POST", url, body, &notionProperties)
+	page, err := s.notionClient.CreateNotionPage(notionDatabaseId, body)
 
 	if err != nil {
 		return nil, err
 	}
 
 	savedJob := &model.Job{
-		Country:     notionProperties.Properties.Country.Select.Name,
-		Company:     notionProperties.Properties.Company.Select.Name,
-		URL:         notionProperties.Properties.URL.URL,
-		Title:       notionProperties.Properties.Link.Title[0].PlainText,
-		Description: notionProperties.Properties.Description.RichText[0].PlainText,
+		Country:     page.Properties.Country.Select.Name,
+		Company:     page.Properties.Company.Select.Name,
+		URL:         page.Properties.URL.URL,
+		Title:       page.Properties.Link.Title[0].PlainText,
+		Description: page.Properties.Description.RichText[0].PlainText,
 	}
 
 	return savedJob, nil
 
 }
 
-func UpdateJob(pageId string) error {
-	url := "pages/" + pageId
+func(s *jobService) UpdateJob(pageId string) error {
 	today := time.Now()
 	body := map[string]any{
 		"properties": map[string]any{
@@ -211,7 +283,7 @@ func UpdateJob(pageId string) error {
 		},
 	}
 
-	err := notionRequestWrapper("PATCH", url, body, nil)
+	_, err := s.notionClient.UpdateNotionPage(pageId, body)
 
 	if err != nil {
 		return err
@@ -220,9 +292,8 @@ func UpdateJob(pageId string) error {
 	return nil
 }
 
-func GetStats(dateRange string) (*model.StatsResult, error) {
+func(s *jobService) GetStats(dateRange string) (*model.StatsResult, error) {
 	databaseID := os.Getenv("NOTION_DATABASE_ID")
-	url := fmt.Sprintf("databases/%s/query", databaseID)
 
 	var dateFilter map[string]any
 	rangeNumber := 30 // Default to 30 days
@@ -246,9 +317,7 @@ func GetStats(dateRange string) (*model.StatsResult, error) {
 		},
 	}
 
-	var notionResponse model.NotionResponse
-
-	err := notionRequestWrapper("POST", url, body, &notionResponse)
+	response, err := s.notionClient.GetNotionDatabase(databaseID, body)
 
 	if err != nil {
 		return nil, err
@@ -258,18 +327,18 @@ func GetStats(dateRange string) (*model.StatsResult, error) {
 		StatusCount:  make(map[string]int),
 		CompanyCount: make(map[string]int),
 		CountryCount: make(map[string]int),
-		DailyCount: make(map[string]int),
+		DailyCount:   make(map[string]int),
 	}
 
 	// Initialize DailyCount for the last 30 days
 	startDate := time.Now()
-	
+
 	for i := 0; i < rangeNumber; i++ {
 		str := startDate.AddDate(0, 0, -i).Format("2006-01-02")
 		stats.DailyCount[str] = 0
 	}
 
-	for _, data := range notionResponse.Results {
+	for _, data := range response.Results {
 		status := data.Properties.Status.Status.Name
 		company := data.Properties.Company.Select.Name
 		country := data.Properties.Country.Select.Name
@@ -301,9 +370,8 @@ func GetStats(dateRange string) (*model.StatsResult, error) {
 	return stats, nil
 }
 
-func GetStreak() (*model.StreakStats, error) {
+func(s *jobService) GetStreak() (*model.StreakStats, error) {
 	databaseID := os.Getenv("NOTION_DATABASE_ID")
-	url := "databases/" + databaseID + "/query"
 
 	body := map[string]any{
 		"sorts": []map[string]any{
@@ -320,16 +388,14 @@ func GetStreak() (*model.StreakStats, error) {
 		},
 	}
 
-	var notionResponse model.NotionResponse
-
-	err := notionRequestWrapper("POST", url, body, &notionResponse)
+	response, err := s.notionClient.GetNotionDatabase(databaseID, body)
 
 	if err != nil {
 		return nil, err
 	}
 
 	var dates []time.Time
-	for _, res := range notionResponse.Results {
+	for _, res := range response.Results {
 		if res.Properties.AppliedDate.Date.Start != "" {
 			parsed, err := time.Parse(time.RFC3339, res.Properties.AppliedDate.Date.Start)
 			if err == nil {
@@ -378,7 +444,7 @@ func GetStreak() (*model.StreakStats, error) {
 	}
 
 	return &model.StreakStats{
-		TotalCount: len(dates),
+		TotalCount:      len(dates),
 		MaxStreak:       maxStreak,
 		CurrentStreak:   realCurrentStreak,
 		LastAppliedDate: dates[0].Format("2006-01-02"),
