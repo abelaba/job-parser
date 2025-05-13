@@ -189,6 +189,20 @@
             />
           </div>
 
+          <div class="flex space-x-4 m-4">
+            <button
+              id="get-all-jobs"
+              class="cursor-pointer job-filter px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-400 transition"
+            >
+              All
+            </button>
+            <button
+              id="get-not-applied-jobs"
+              class="cursor-pointer job-filter px-4 py-2 bg-gray-300 text-white rounded-lg hover:bg-gray-400 transition"
+            >
+              Not Applied
+            </button>
+          </div>
           <div class="w-full overflow-x-auto">
             <table class="w-full divide-y divide-slate-200">
               <thead class="bg-slate-100 text-slate-800">
@@ -211,7 +225,7 @@
           <div class="w-full flex items-center justify-center">
             <select
               id="stat-dropdown"
-              class="appearance-none py-2 px-3 rounded-md border border-gray-300 bg-white text-gray-700 shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="appearance-none py-2 px-3 rounded-md border border-gray-300 bg-white text-gray-700 shadow-xs cursor-pointer focus:outline-none focus:ring-1 focus:ring-slate-500 focus:border-transparent transition"
             ></select>
           </div>
           <div class="flex flex-col items-center mb-4">
@@ -237,6 +251,7 @@
       </div>
     </div>
 
+    <!-- Modal -->
     <div
       class="main-modal fixed w-full h-full inset-0 z-50 overflow-hidden flex justify-center items-center animated fadeIn faster overflow-y-auto"
       style="background: rgba(0, 0, 0, 0.7)"
@@ -274,6 +289,11 @@
               class="cursor-pointer hidden text-center settings-save-button w-full focus:outline-none px-4 bg-slate-800 p-3 ml-3 rounded-lg text-white hover:bg-slate-700"
             >
               Save
+            </button>
+            <button
+              class="cursor-pointer hidden text-center edit-job-button w-full focus:outline-none px-4 bg-slate-800 p-3 ml-3 rounded-lg text-white hover:bg-slate-700"
+            >
+              Edit
             </button>
           </div>
         </div>

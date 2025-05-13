@@ -12,3 +12,8 @@ type GroqChoice struct {
 type GroqMessage struct {
 	Content string `json:"content"`
 }
+
+const (
+	Mixtral_Saba_24b   string = "mistral-saba-24b"
+	Gemma2_9B_Instruct string = "gemma2-9b-it"
+)

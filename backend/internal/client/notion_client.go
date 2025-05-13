@@ -26,9 +26,9 @@ type NotionClient interface {
 	CreateNotionPage(databaseID string, body map[string]any) (*model.NotionPage, error)
 }
 
-func CreateNotionClient(httpClient *http.Client ) (NotionClient, error) {
+func CreateNotionClient(httpClient *http.Client) (NotionClient, error) {
 	notionApiKey := os.Getenv("NOTION_API_KEY")
-	
+
 	if notionApiKey == "" {
 		return nil, errors.New("Notion API key is not set")
 	}
@@ -41,8 +41,8 @@ func CreateNotionClient(httpClient *http.Client ) (NotionClient, error) {
 	}, nil
 }
 
-func(c *notionClient) request(requestType string, url string, body map[string]any, responseFormat any) error {
-	
+func (c *notionClient) request(requestType string, url string, body map[string]any, responseFormat any) error {
+
 	url = c.baseURL + url
 
 	bodyBytes, err := json.Marshal(body)

@@ -22,27 +22,27 @@ type GroqClient interface {
 	POST(url string, body map[string]any) (*model.GroqResponse, error)
 }
 
-func CreateGroqClient(httpClient *http.Client ) (GroqClient, error) {
+func CreateGroqClient(httpClient *http.Client) (GroqClient, error) {
 	groqAPIKey := os.Getenv("GROQ_API_KEY")
-	
+
 	if groqAPIKey == "" {
 		return nil, fmt.Errorf("Groq API key not set")
 	}
-	
-	return  &groqClient{
+
+	return &groqClient{
 		apiKey:     groqAPIKey,
 		baseURL:    "https://api.groq.com/openai/v1/chat/completions",
 		httpClient: httpClient,
 	}, nil
 }
 
-func(c *groqClient) POST(url string, body map[string]any) (*model.GroqResponse, error) {
+func (c *groqClient) POST(url string, body map[string]any) (*model.GroqResponse, error) {
 	var response model.GroqResponse
 
 	if err := c.request("POST", "", body, &response); err != nil {
 		return nil, fmt.Errorf("error making Groq request: %w", err)
 	}
-	
+
 	if len(response.Choices) == 0 || response.Choices[0].Message.Content == "" {
 		return nil, errors.New("empty or invalid response from Groq API: no choices or content found")
 	}
@@ -50,7 +50,7 @@ func(c *groqClient) POST(url string, body map[string]any) (*model.GroqResponse, 
 	return &response, nil
 }
 
-func(c *groqClient) request(requestType string, url string, body map[string]any, responseFormat any) error {
+func (c *groqClient) request(requestType string, url string, body map[string]any, responseFormat any) error {
 	url = c.baseURL + url
 
 	bodyBytes, err := json.Marshal(body)

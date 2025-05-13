@@ -19,3 +19,12 @@ export const RANGE = {
 export const STORAGEKEY = {
   baseURL: 'baseURL',
 }
+
+export const JOBSTATUS = {
+  APPLIED: 'Applied',
+  NOTAPPLIED: 'Not Applied',
+  ASSESSMENT: 'Assessment',
+  VISANOTSUPPORTED: 'Visa not Supported',
+  REJECTED: 'Rejected',
+  CLOSED: 'Closed',
+}
