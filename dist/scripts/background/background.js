@@ -28,7 +28,7 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
       })
     return true
   } else if (request.action === REQUESTACTION.GETSAVEDJOBS) {
-    getRecentlySavedJobs()
+    getRecentlySavedJobs(request.status)
       .then((data) => {
         sendResponse({
           message: SUCCESSMESSAGE,
@@ -79,7 +79,7 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
 
     return true
   } else if (request.action === REQUESTACTION.UPDATEJOB) {
-    updateJob(request.pageId)
+    updateJob(request.pageId, request.job)
       .then(() => {
         sendResponse({
           message: SUCCESSMESSAGE,

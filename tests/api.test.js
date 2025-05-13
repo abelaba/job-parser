@@ -94,9 +94,16 @@ describe('API Success cases', () => {
   test('updateJob sends PUT request', async () => {
     fetch.mockResolvedValueOnce({ ok: true })
 
-    await updateJob('id')
+    let body = {
+      title: 'Updated Job Title',
+      company: 'Updated Company',
+    }
+
+    await updateJob('id', body)
     expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/id'), {
       method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     })
   })
 })
@@ -131,6 +138,6 @@ describe('API failure cases', () => {
 
   test('updateJob throws error when fetch fails', async () => {
     fetch.mockResolvedValueOnce({ ok: false })
-    await expect(updateJob('id')).rejects.toThrow('Failed to update job')
+    await expect(updateJob('id', {})).rejects.toThrow('Failed to update job')
   })
 })

@@ -1,4 +1,4 @@
-import { RANGE, REQUESTACTION, STORAGEKEY, SUCCESSMESSAGE } from './utils/constants.js'
+import { JOBSTATUS, RANGE, REQUESTACTION, STORAGEKEY, SUCCESSMESSAGE } from './utils/constants.js'
 import { getStorageValue, sendNotification } from './utils/utils.js'
 
 const modal = document.querySelector('.main-modal')
@@ -11,6 +11,7 @@ const modalClose = () => {
   modal.classList.add('fadeOut')
   document.querySelector('.apply-button').classList.add('hidden')
   document.querySelector('.settings-save-button').classList.add('hidden')
+  document.querySelector('.edit-job-button').classList.add('hidden')
   setTimeout(() => {
     modal.style.display = 'none'
   }, 500)
@@ -76,10 +77,11 @@ const compareJobPosting = async (jobPosting) => {
   })
 }
 
-const getSavedJobs = () => {
+const getSavedJobs = (status = '') => {
   chrome.runtime.sendMessage(
     {
       action: REQUESTACTION.GETSAVEDJOBS,
+      status: status,
     },
     (response) => {
       if (response.message === SUCCESSMESSAGE) {
@@ -89,41 +91,60 @@ const getSavedJobs = () => {
           const row = document.createElement('tr')
           row.className = 'hover:bg-slate-100 odd:bg-white even:bg-slate-50'
           row.innerHTML = `
-		<td class="px-4 py-2">${data.title}</td>
-		<td class="px-4 py-2">${data.company}</td>
-		<td class="px-4 py-2">${data.country}</td>
-		<td class="px-4 py-2">
-		    <button style="transition:all .15s ease" class="open-button cursor-pointer outline-none mr-1 mb-1 border border-solid border-blue-500 rounded px-4 py-2 bg-transparent text-xs text-blue-500 font-bold uppercase focus:outline-none active:bg-blue-600 hover:bg-blue-600 hover:text-white">Open</button>
-		</td>
-		<td class="px-4 py-2">
-		    <button style="transition:all .15s ease" class="apply-btn cursor-pointer outline-none mr-1 mb-1 border border-solid border-green-500 rounded px-4 py-2 bg-transparent text-xs text-green-500 font-bold uppercase focus:outline-none active:bg-green-600 hover:bg-green-600 hover:text-white" data-id="${data.id}">Applied</button>
-		</td>
-	    `
-          row.querySelector('.apply-btn').addEventListener('click', () => updateJob(data.id))
+						<td class="px-4 py-2">${data.title}</td>
+						<td class="px-4 py-2">${data.company}</td>
+						<td class="px-4 py-2">${data.country}</td>
+						<td class="px-4 py-2">
+						<button class="transition open-button cursor-pointer border-blue-500 rounded-full 
+					px-4 py-2 text-blue-500 font-bold uppercase hover:bg-blue-600 hover:text-white">Open</button>
+						</td>
+						<td class="px-4 py-2">
+						<button class="transition edit-btn cursor-pointer border-yellow-500 rounded-full 
+					px-4 py-2 text-yellow-500 font-bold uppercase hover:bg-yellow-600 hover:text-white" 
+					data-id="${data.id}">Edit</button>
+						</td>
+	        `
           row.querySelector('.open-button').addEventListener('click', async () => {
             const result = await compareJobPosting(data.description)
             const missingSkills = result.missingSkills.join(', ')
             openModal(
               'Job Qualification',
               `
-		<div class="p-2">
-		    <p class="text-lg font-bold"> Summary </p>
-		    <p class="mb-2 leading-relaxed">${data.description}</p>
-		    <div class="mb-2 bg-green-100 border border-green-300 text-green-800 rounded-lg p-3">
-			<strong>Match Score:</strong> ${result.matchScore}
-		    </div>
-		    <div class="bg-red-100 border border-red-300 text-red-800 rounded-lg p-3 mb-2">
-			<strong>Missing Skills:</strong> ${missingSkills}
-		    </div>
-		    <div class="bg-yellow-100 border border-yellow-300 text-yellow-800 rounded-lg p-3">
-			<strong>Recommendations:</strong> ${result.recommendations}
-		    </div>
-
-		    
-		</div>`
+							<div class="p-2">
+		    				<p class="text-lg font-bold"> Summary </p>
+		    				<p class="mb-2 leading-relaxed">${data.description}</p>
+		    				<div class="mb-2 bg-green-100 border border-green-300 text-green-800 rounded-lg p-3">
+									<strong>Match Score:</strong> ${result.matchScore}
+		    				</div>
+		    				<div class="bg-red-100 border border-red-300 text-red-800 rounded-lg p-3 mb-2">
+									<strong>Missing Skills:</strong> ${missingSkills}
+		    				</div>
+		    				<div class="bg-yellow-100 border border-yellow-300 text-yellow-800 rounded-lg p-3">
+									<strong>Recommendations:</strong> ${result.recommendations}
+		    				</div>		    
+							</div>`
             )
             document.querySelector('.apply-button').classList.remove('hidden')
             document.querySelector('.apply-button').href = data.url
+          })
+
+          row.querySelector('.edit-btn').addEventListener('click', () => {
+            let content = ''
+            for (const key of Object.keys(JOBSTATUS)) {
+              let value = JOBSTATUS[key]
+              content += `
+							<div class="flex items-center mb-2">
+								<input type="radio" id="${value}" name="status" value="${value}" class="mr-2" ${data.status === value ? 'checked' : ''}>
+								<label for="${value}" class="text-sm font-medium text-gray-700">${value}</label>
+							</div>
+							`
+            }
+            openModal('Edit Job', content)
+            document.querySelector('.edit-job-button').classList.remove('hidden')
+            document.querySelector('.edit-job-button').addEventListener('click', () => {
+              const selectedStatus = document.querySelector('input[name="status"]:checked').value
+              updateJob(data.id, { ...data, status: selectedStatus })
+            })
           })
 
           table.appendChild(row)
@@ -224,22 +245,28 @@ const getStreak = () => {
   )
 }
 
-const updateJob = (pageId) => {
+const updateJob = (pageId, job) => {
   chrome.runtime.sendMessage(
     {
       action: REQUESTACTION.UPDATEJOB,
       pageId: pageId,
+      job: job,
     },
     (response) => {
       if (response.message === SUCCESSMESSAGE) {
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          if (tabs[0]) {
-            chrome.tabs.sendMessage(tabs[0].id, {
-              action: REQUESTACTION.SHOWDIALOG,
-            })
-            window.close()
-          }
-        })
+        let celebration = job.status === JOBSTATUS.APPLIED
+        if (celebration) {
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs[0]) {
+              chrome.tabs.sendMessage(tabs[0].id, {
+                action: REQUESTACTION.SHOWDIALOG,
+              })
+              window.close()
+            }
+          })
+        }
+        getSavedJobs()
+        modalClose()
       }
     }
   )
@@ -271,6 +298,28 @@ document.addEventListener('DOMContentLoaded', () => {
         tabContents.children[i].classList.add('hidden')
       }
       e.target.parentElement.classList.add('border-b-2')
+    })
+  })
+
+  // On click method for getting all jobs
+  const buttons = document.querySelectorAll('.job-filter')
+
+  buttons.forEach((button) => {
+    button.addEventListener('click', (e) => {
+      buttons.forEach((btn) => {
+        btn.classList.remove('bg-gray-800')
+        btn.classList.remove('bg-gray-300')
+        btn.classList.add('bg-gray-300')
+      })
+
+      e.currentTarget.classList.remove('bg-gray-300')
+      e.currentTarget.classList.add('bg-gray-800')
+
+      if (e.currentTarget.id === 'get-all-jobs') {
+        getSavedJobs()
+      } else if (e.currentTarget.id === 'get-not-applied-jobs') {
+        getSavedJobs(JOBSTATUS.NOTAPPLIED)
+      }
     })
   })
 

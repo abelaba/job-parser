@@ -35,8 +35,8 @@ export const compareJobPosting = async ({ resume, jobPosting }) => {
 }
 
 // Get list of recently saved jobs
-export const getRecentlySavedJobs = async () => {
-  const response = await fetchWrapper(`recent`)
+export const getRecentlySavedJobs = async (status) => {
+  const response = await fetchWrapper(`recent?status=${status}`)
 
   if (!response.ok) throw new Error('Failed to get saved jobs')
   return await response.json()
@@ -59,9 +59,11 @@ export const getStreak = async () => {
 }
 
 // Mark job as applied
-export const updateJob = async (pageId) => {
+export const updateJob = async (pageId, job) => {
   const response = await fetchWrapper(`${pageId}`, {
     method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(job),
   })
 
   if (!response.ok) throw new Error('Failed to update job')

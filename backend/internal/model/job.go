@@ -4,6 +4,7 @@ package model
 type Job struct {
 	ID          string `json:"id"`
 	Country     string `json:"country"`
+	Status      string `json:"status"`
 	Company     string `json:"company"`
 	URL         string `json:"url"`
 	Title       string `json:"title"`

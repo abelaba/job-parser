@@ -15,8 +15,8 @@ import (
 type JobService interface {
 	SaveJob(job model.Job) (*model.Job, error)
 	checkIfJobPostingExists(url string) error
-	UpdateJob(pageID string) error
-	GetRecentlySavedJobs() ([]model.Job, error)
+	UpdateJob(pageID string, job model.Job) error
+	GetRecentlySavedJobs(status string) ([]model.Job, error)
 	GetStats(dateRange string) (*model.StatsResult, error)
 	GetStreak() (*model.StreakStats, error)
 	formatJobDescriptionToJSON(jobDescription string) (*model.Job, error)
@@ -36,7 +36,7 @@ func NewJobService(notionClient client.NotionClient, groqClient client.GroqClien
 	}
 }
 
-func(s *jobService) SaveJob(job model.Job) (*model.Job, error) {
+func (s *jobService) SaveJob(job model.Job) (*model.Job, error) {
 	err := s.checkIfJobPostingExists(job.URL)
 	if err != nil {
 		return nil, err
@@ -63,7 +63,7 @@ func(s *jobService) SaveJob(job model.Job) (*model.Job, error) {
 	return savedJob, nil
 }
 
-func(s *jobService) formatJobDescriptionToJSON(jobDescription string) (*model.Job, error) {
+func (s *jobService) formatJobDescriptionToJSON(jobDescription string) (*model.Job, error) {
 	body := map[string]any{
 		"messages": []map[string]string{
 			{
@@ -75,7 +75,7 @@ func(s *jobService) formatJobDescriptionToJSON(jobDescription string) (*model.Jo
 				"content": jobDescription,
 			},
 		},
-		"model":  "mistral-saba-24b",
+		"model":  model.Mixtral_Saba_24b,
 		"stream": false,
 		"response_format": map[string]string{
 			"type": "json_object",
@@ -83,11 +83,11 @@ func(s *jobService) formatJobDescriptionToJSON(jobDescription string) (*model.Jo
 	}
 
 	response, err := s.groqClient.POST("", body)
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("error making Groq request: %w", err)
 	}
-	
+
 	var job model.Job
 	if err := json.Unmarshal([]byte(response.Choices[0].Message.Content), &job); err != nil {
 		return nil, fmt.Errorf("error decoding job JSON: %w", err)
@@ -96,7 +96,7 @@ func(s *jobService) formatJobDescriptionToJSON(jobDescription string) (*model.Jo
 	return &job, nil
 }
 
-func(s *jobService) CompareJobPosting(resume any, jobPosting string) (*model.JobComparison, error) {
+func (s *jobService) CompareJobPosting(resume any, jobPosting string) (*model.JobComparison, error) {
 	bytes, err := json.Marshal(resume)
 	if err != nil {
 		return nil, fmt.Errorf("error marshalling resume: %w", err)
@@ -119,7 +119,7 @@ func(s *jobService) CompareJobPosting(resume any, jobPosting string) (*model.Job
 				"content": "Job Posting:\n" + jobPosting,
 			},
 		},
-		"model":  "gemma2-9b-it",
+		"model":  model.Gemma2_9B_Instruct,
 		"stream": false,
 		"response_format": map[string]string{
 			"type": "json_object",
@@ -127,7 +127,7 @@ func(s *jobService) CompareJobPosting(resume any, jobPosting string) (*model.Job
 	}
 
 	response, err := s.groqClient.POST("", body)
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("error making Groq request: %w", err)
 	}
@@ -140,19 +140,22 @@ func(s *jobService) CompareJobPosting(resume any, jobPosting string) (*model.Job
 	return &jobComparison, nil
 }
 
-
-func(s *jobService) GetRecentlySavedJobs() ([]model.Job, error) {
+func (s *jobService) GetRecentlySavedJobs(status string) ([]model.Job, error) {
 	notionDatabaseId := os.Getenv("NOTION_DATABASE_ID")
 
-	body := map[string]any{
-		"filter": map[string]any{
-			"property": "Status",
-			"status": map[string]string{
-				"equals": "Not Applied",
+	var body map[string]any
+	if status == "" {
+		body = map[string]any{}
+	} else {
+		body = map[string]any{
+			"filter": map[string]any{
+				"property": "Status",
+				"status": map[string]string{
+					"equals": status,
+				},
 			},
-		},
+		}
 	}
-
 	response, err := s.notionClient.GetNotionDatabase(notionDatabaseId, body)
 
 	if err != nil {
@@ -167,6 +170,7 @@ func(s *jobService) GetRecentlySavedJobs() ([]model.Job, error) {
 			Country:     content.Properties.Country.Select.Name,
 			Company:     content.Properties.Company.Select.Name,
 			URL:         content.Properties.URL.URL,
+			Status:      content.Properties.Status.Status.Name,
 			Title:       content.Properties.Link.Title[0].PlainText,
 			Description: content.Properties.Description.RichText[0].PlainText,
 		})
@@ -176,7 +180,7 @@ func(s *jobService) GetRecentlySavedJobs() ([]model.Job, error) {
 
 }
 
-func(s *jobService) checkIfJobPostingExists(jobPostingUrl string) error {
+func (s *jobService) checkIfJobPostingExists(jobPostingUrl string) error {
 	notionDatabaseId := os.Getenv("NOTION_DATABASE_ID")
 
 	body := map[string]any{
@@ -201,7 +205,7 @@ func(s *jobService) checkIfJobPostingExists(jobPostingUrl string) error {
 	return nil
 }
 
-func(s *jobService) saveJobPosting(data *model.Job) (*model.Job, error) {
+func (s *jobService) saveJobPosting(data *model.Job) (*model.Job, error) {
 	notionDatabaseId := os.Getenv("NOTION_DATABASE_ID")
 
 	body := map[string]any{
@@ -259,6 +263,7 @@ func(s *jobService) saveJobPosting(data *model.Job) (*model.Job, error) {
 		Company:     page.Properties.Company.Select.Name,
 		URL:         page.Properties.URL.URL,
 		Title:       page.Properties.Link.Title[0].PlainText,
+		Status:      page.Properties.Status.Status.Name,
 		Description: page.Properties.Description.RichText[0].PlainText,
 	}
 
@@ -266,21 +271,24 @@ func(s *jobService) saveJobPosting(data *model.Job) (*model.Job, error) {
 
 }
 
-func(s *jobService) UpdateJob(pageId string) error {
+func (s *jobService) UpdateJob(pageId string, job model.Job) error {
 	today := time.Now()
 	body := map[string]any{
 		"properties": map[string]any{
 			"Status": map[string]any{
 				"status": map[string]any{
-					"name": "Applied",
-				},
-			},
-			"Applied Date": map[string]any{
-				"date": map[string]any{
-					"start": today.Format(time.RFC3339), // Equivalent to toISOString()
+					"name": job.Status,
 				},
 			},
 		},
+	}
+
+	if job.Status == "Applied" {
+		body["properties"].(map[string]any)["Applied Date"] = map[string]any{
+			"date": map[string]any{
+				"start": today.Format(time.RFC3339), // Equivalent to toISOString()
+			},
+		}
 	}
 
 	_, err := s.notionClient.UpdateNotionPage(pageId, body)
@@ -292,7 +300,7 @@ func(s *jobService) UpdateJob(pageId string) error {
 	return nil
 }
 
-func(s *jobService) GetStats(dateRange string) (*model.StatsResult, error) {
+func (s *jobService) GetStats(dateRange string) (*model.StatsResult, error) {
 	databaseID := os.Getenv("NOTION_DATABASE_ID")
 
 	var dateFilter map[string]any
@@ -370,7 +378,7 @@ func(s *jobService) GetStats(dateRange string) (*model.StatsResult, error) {
 	return stats, nil
 }
 
-func(s *jobService) GetStreak() (*model.StreakStats, error) {
+func (s *jobService) GetStreak() (*model.StreakStats, error) {
 	databaseID := os.Getenv("NOTION_DATABASE_ID")
 
 	body := map[string]any{
