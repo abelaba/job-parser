@@ -75,7 +75,7 @@ func (s *jobService) formatJobDescriptionToJSON(jobDescription string) (*model.J
 				"content": jobDescription,
 			},
 		},
-		"model":  model.Mixtral_Saba_24b,
+		"model":  os.Getenv("LLM_MODEL"),
 		"stream": false,
 		"response_format": map[string]string{
 			"type": "json_object",
@@ -119,7 +119,7 @@ func (s *jobService) CompareJobPosting(resume any, jobPosting string) (*model.Jo
 				"content": "Job Posting:\n" + jobPosting,
 			},
 		},
-		"model":  model.Gemma2_9B_Instruct,
+		"model":  os.Getenv("LLM_MODEL"),
 		"stream": false,
 		"response_format": map[string]string{
 			"type": "json_object",
